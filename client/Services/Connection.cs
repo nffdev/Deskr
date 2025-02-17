@@ -30,7 +30,7 @@ namespace client.Services
             try 
             {
                 var ip = await _ipService.GetPublicIpAsync();
-                var deviceInfo = $"{Environment.OSVersion}";
+                var deviceInfo = SystemInfo.GetOperatingSystem();
                 
                 var connectionInfo = new ConnectionRequest
                 {
