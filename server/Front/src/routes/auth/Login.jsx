@@ -34,7 +34,7 @@ export default function Register() {
     return (
         <div className="flex flex-col items-center justify-center w-full h-screen py-8 bg-gray-800 text-white">
             <div className="flex flex-col items-center justify-center w-full max-w-96">
-                <h1 className="text-center text-4xl font-extrabold">Se connecter à un compte</h1>
+                <h1 className="text-center text-4xl font-extrabold">Login</h1>
                 {error ? <p className="text-red-500 mt-10">{error}</p> : null}
                 <label htmlFor="username" className={`relative w-full ${error ? 'mt-2' : 'mt-12'}`}>
                     <box-icon class="fill-white opacity-30 w-6 h-6 absolute top-1/2 transform -translate-y-1/2 left-3" type='solid' name='user'></box-icon>
@@ -49,12 +49,12 @@ export default function Register() {
                     <Input className="text-black" onChange={(e) => setDatas(prev => ({ ...prev, password: e.target.value }))} type="password" name="password" id="password" placeholder="Mot de passe"></Input>
                 </label>
                 <div className="flex items-center justify-between w-full px-8 mt-10">
-                    <h2 className="text-2xl font-extrabold mt-2 mb-2">Se connecter</h2>
+                    <h2 className="text-2xl font-extrabold mt-2 mb-2">Login</h2>
                     <Button size='icon' onClick={() => login()}><box-icon class="h-8 w-8 fill-white" name='right-arrow-alt'></box-icon></Button>
                 </div>
             </div>
             <div className="flex flex-col items-center justify-center gap-8 w-full">
-                <Link to="/auth/register" className="text-muted-foreground font-light cursor-pointer">Je n'ai pas encore de compte</Link>
+                <Link to="/auth/register" className="text-muted-foreground font-light cursor-pointer">Still no account ? Create one now !</Link>
             </div>
         </div>
     )

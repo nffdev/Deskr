@@ -6,8 +6,10 @@ export default function Home() {
 
     return (
         <div className="flex flex-col gap-12 items-center justify-center">
-            <h1 className="text-5xl font-extrabold">Template React</h1>
-            <Button onClick={() => navigate('/auth/register')}><span className="mt-1">Start</span></Button>
+            <h1 className="text-xl font-bold bg-black text-transparent bg-clip-text">
+                Deskr
+            </h1>
+            <Button onClick={() => navigate('/dash/dashboard')}><span className="mt-1">Start</span></Button>
         </div>
     )
 }

@@ -20,7 +20,12 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
 src/icons/discord.png
+
 .env
+
+.vs
+bin
+obj
+packages
