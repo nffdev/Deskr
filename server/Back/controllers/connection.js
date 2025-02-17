@@ -29,8 +29,38 @@ const connection = {
             const connections = await Connection.find()
                 .sort({ timestamp: -1 })
                 .limit(10);
-            res.status(200).json(connections);
+
+            const updatedConnections = connections.map(conn => {
+                const isActive = conn.isConnectionActive();
+                return {
+                    ...conn.toObject(),
+                    isActive
+                };
+            });
+
+            res.status(200).json(updatedConnections);
         } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    handleHeartbeat: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const connection = await Connection.findById(id);
+
+            if (!connection) {
+                return res.status(200).json({ message: 'Connection not found, but continuing heartbeat' });
+            }
+
+            connection.lastHeartbeat = new Date();
+            connection.isActive = true;
+            await connection.save();
+
+            req.app.get('io').emit('connectionUpdated', connection);
+            res.status(200).json(connection);
+        } catch (error) {
+            console.error('Heartbeat error:', error);
             res.status(500).json({ error: error.message });
         }
     },
@@ -43,6 +73,12 @@ const connection = {
                 { isActive: false },
                 { new: true }
             );
+            
+            if (!connection) {
+                return res.status(200).json({ message: 'Connection not found, but marked as inactive' });
+            }
+
+            req.app.get('io').emit('connectionUpdated', connection);
             res.status(200).json(connection);
         } catch (error) {
             res.status(500).json({ error: error.message });

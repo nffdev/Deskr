@@ -13,6 +13,7 @@ namespace client.Services
         private readonly HttpClient _client;
         private readonly IpService _ipService;
         private readonly JsonSerializerOptions _jsonOptions;
+        private Heartbeat _heartbeat;
 
         public ConnectionService()
         {
@@ -63,9 +64,12 @@ namespace client.Services
                 }
 
                 var responseBody = await response.Content.ReadAsStringAsync();
+                var connectionResponse = JsonSerializer.Deserialize<ConnectionResponse>(responseBody, _jsonOptions);
                 // Console.WriteLine($"Server response: {responseBody}");
                 
-                return JsonSerializer.Deserialize<ConnectionResponse>(responseBody, _jsonOptions);
+                _heartbeat = new Heartbeat(connectionResponse.Id);
+                
+                return connectionResponse;
             }
             catch (Exception ex)
             {
@@ -81,7 +85,9 @@ namespace client.Services
         public async Task DisconnectAsync(string connectionId)
         {
             if (string.IsNullOrEmpty(connectionId))
-                throw new ArgumentException("Connection ID cannot be null or empty", nameof(connectionId));
+                throw new ArgumentException("Cannot be null or empty", nameof(connectionId));
+
+            _heartbeat?.Stop();
 
             var response = await _client.PutAsync($"{Constants.API_BASE}/connections/{connectionId}/inactive", null);
             if (!response.IsSuccessStatusCode)

@@ -28,6 +28,12 @@ export default function Dashboard() {
       setConnections(prev => [connection, ...prev].slice(0, 10));
     });
 
+    socket.on('connectionUpdated', (updatedConnection) => {
+      setConnections(prev => prev.map(conn => 
+        conn._id === updatedConnection._id ? updatedConnection : conn
+      ));
+    });
+
     return () => socket.disconnect();
   }, []);
 
@@ -112,19 +118,19 @@ export default function Dashboard() {
       ) : (
         <div className="p-4 space-y-4">
           {connections.map((connection) => (
-            <div key={connection._id} className="p-4 bg-white rounded-lg shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-500" />
-                  <span className="font-medium">{connection.ip}</span>
-                </div>
-                <span className={`px-2 py-1 text-xs rounded ${connection.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                  {connection.isActive ? 'Active' : 'Inactive'}
-                </span>
+            <div key={connection._id} className="p-4 bg-white rounded-lg shadow-sm flex items-center">
+              <div className="w-10 h-16 bg-gray-100 rounded flex items-center justify-center">
+                <Monitor className="w-6 h-6 text-gray-400" />
               </div>
-              <div className="text-sm text-gray-500">
-                <p>{connection.deviceInfo}</p>
-                <p>{new Date(connection.timestamp).toLocaleString()}</p>
+              <div className="flex-1 ml-4">
+                <h3 className="font-medium">{connection.deviceInfo}</h3>
+                <p className="text-sm text-gray-500">{connection.ip}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className={`w-2 h-2 rounded-full ${connection.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className="text-xs text-gray-500">
+                    {connection.isActive ? 'Online' : 'Offline'}
+                  </span>
+                </div>
               </div>
             </div>
           ))}

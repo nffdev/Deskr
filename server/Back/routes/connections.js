@@ -8,4 +8,6 @@ router.get('/recent', connection.getRecentConnections);
 
 router.put('/:id/inactive', connection.markInactive);
 
+router.post('/:id/heartbeat', connection.handleHeartbeat);  
+
 module.exports = router;
