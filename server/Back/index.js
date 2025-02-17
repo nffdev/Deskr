@@ -53,10 +53,10 @@ mongoose.connect(process.env.MONGO_URL)
     .catch(err => console.log(`Error to connect to mongodb: ${err}`));
 
 io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
+    // console.log('Client connected:', socket.id);
     
     socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
+        // console.log('Client disconnected:', socket.id);
     });
 });
 

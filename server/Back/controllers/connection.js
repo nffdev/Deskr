@@ -3,20 +3,27 @@ const Connection = require('../models/Connection');
 const connection = {
     recordConnection: async (req, res) => {
         try {
-            console.log('Received request body:', req.body);
+            console.log('New connection:', req.body);
             
             const ip = req.body.ip || req.ip || req.connection.remoteAddress;
             const deviceInfo = req.body.deviceInfo || req.headers['user-agent'] || 'Unknown Device';
 
-            const connection = new Connection({
-                ip,
-                deviceInfo
-            });
+            let connection = await Connection.findOne({ ip });
 
-            await connection.save();
+            if (connection) {
+                connection.deviceInfo = deviceInfo;
+                connection.isActive = true;
+                connection.lastHeartbeat = new Date();
+                await connection.save();
+            } else {
+                connection = new Connection({
+                    ip,
+                    deviceInfo
+                });
+                await connection.save();
+            }
             
             req.app.get('io').emit('newConnection', connection);
-
             res.status(200).json(connection);
         } catch (error) {
             console.error('Error in recordConnection:', error);
