@@ -3,8 +3,10 @@ const Connection = require('../models/Connection');
 const connection = {
     recordConnection: async (req, res) => {
         try {
-            const ip = req.ip || req.connection.remoteAddress;
-            const deviceInfo = req.headers['user-agent'] || 'Unknown Device';
+            console.log('Received request body:', req.body);
+            
+            const ip = req.body.ip || req.ip || req.connection.remoteAddress;
+            const deviceInfo = req.body.deviceInfo || req.headers['user-agent'] || 'Unknown Device';
 
             const connection = new Connection({
                 ip,
@@ -17,6 +19,7 @@ const connection = {
 
             res.status(200).json(connection);
         } catch (error) {
+            console.error('Error in recordConnection:', error);
             res.status(500).json({ error: error.message });
         }
     },
