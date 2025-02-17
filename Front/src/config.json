@@ -1,0 +1,4 @@
+{
+    "BASE_API": "http://localhost:8080/api",
+    "API_VERSION": 1
+}
