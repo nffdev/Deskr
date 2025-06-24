@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/lib/hooks/useAuth";
 import BottomNav from "@/components/nav/BottomNav";
-import { Search, Settings, Smartphone, Plus, Monitor, Radio, ArrowRight, Users } from 'lucide-react'
+import { Search, Settings, Smartphone, Plus, Monitor, Radio, ArrowRight, Users, X, Laptop, Tablet, Tv } from 'lucide-react'
 import io from 'socket.io-client';
 import config from '@/config.json';
 
@@ -14,6 +14,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [connections, setConnections] = useState([]);
   const [activeTab, setActiveTab] = useState('device');
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [deviceType, setDeviceType] = useState('smartphone');
 
   useEffect(() => {
     if (!API_URL) {
@@ -105,7 +107,10 @@ export default function Dashboard() {
             <ArrowRight className="w-5 h-5 text-blue-500" />
           </div>
 
-          <button className="w-full p-4 bg-white rounded-lg shadow-sm flex items-center">
+          <button 
+            className="w-full p-4 bg-white rounded-lg shadow-sm flex items-center"
+            onClick={() => setShowBuilder(true)}
+          >
             <div className="w-10 h-16 bg-gray-100 rounded flex items-center justify-center">
               <Plus className="w-6 h-6 text-gray-400" />
             </div>
@@ -143,7 +148,68 @@ export default function Dashboard() {
         </div>
         <p className="text-center text-gray-500">Easy connect to device</p>
       </div>
-
+      {showBuilder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="font-semibold text-lg">Add New Device</h2>
+              <button 
+                onClick={() => setShowBuilder(false)}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  className={`p-4 rounded-lg border flex flex-col items-center ${deviceType === 'smartphone' ? 'border-blue-500 bg-blue-50' : ''}`}
+                  onClick={() => setDeviceType('smartphone')}
+                >
+                  <Smartphone className="w-8 h-8 mb-2 text-gray-600" />
+                  <span>Smartphone</span>
+                </button>
+                
+                <button 
+                  className={`p-4 rounded-lg border flex flex-col items-center ${deviceType === 'laptop' ? 'border-blue-500 bg-blue-50' : ''}`}
+                  onClick={() => setDeviceType('laptop')}
+                >
+                  <Laptop className="w-8 h-8 mb-2 text-gray-600" />
+                  <span>Laptop</span>
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Device Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="Enter device name"
+                    className="w-full p-2 border rounded-lg"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">IP Address</label>
+                  <input 
+                    type="text" 
+                    placeholder="192.168.1.1"
+                    className="w-full p-2 border rounded-lg"
+                  />
+                </div>
+              </div>
+              
+              <div className="pt-4">
+                <button className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition">
+                  Add Device
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <BottomNav />
     </div>
   )
