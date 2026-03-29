@@ -1,0 +1,8 @@
+.vs
+bin
+obj
+packages
+x64
+Release
+settings.json
+.vscode/settings.json
