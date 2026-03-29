@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from "@/lib/hooks/useAuth";
 import BottomNav from "@/components/nav/BottomNav";
-import { Package, FileCode, Download, Check, Loader2, AlertCircle } from 'lucide-react';
+import { Package, FileCode, Download, Check, Loader2, AlertCircle, Upload, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { BASE_API, API_VERSION } from "../../config.json";
 import io from 'socket.io-client';
@@ -15,7 +15,11 @@ export default function Builder() {
     appName: '',
     version: '1.0.0',
     language: 'cs',
+    description: '',
+    copyright: '',
+    apiUrl: '',
     icon: null,
+    iconId: null,
   });
   const [buildStatus, setBuildStatus] = useState({
     progress: 0,
@@ -26,6 +30,7 @@ export default function Builder() {
     fileName: null,
     success: null
   });
+  const [iconPreview, setIconPreview] = useState(null);
   const socketRef = useRef(null);
   const buildIdRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -78,6 +83,34 @@ export default function Builder() {
     }));
   };
 
+  const handleIconSelect = async (file) => {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      setIconPreview(e.target.result);
+      const base64 = e.target.result.split(',')[1];
+      const iconId = Date.now().toString(16);
+
+      try {
+        const token = localStorage.getItem('token');
+        await fetch(`${BASE_API}/v${API_VERSION}/build/upload/icon`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': token })
+          },
+          body: JSON.stringify({ id: iconId, data: base64 })
+        });
+        manageConfigChange('iconId', iconId);
+        manageConfigChange('icon', file);
+      } catch (err) {
+        console.error('Failed to upload icon:', err);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const startBuild = async () => {
     if (!buildConfig.appName) {
       alert('Le nom de l\'application est requis');
@@ -106,7 +139,12 @@ export default function Builder() {
         },
         body: JSON.stringify({
           appName: buildConfig.appName,
-          language: buildConfig.language
+          language: buildConfig.language,
+          version: buildConfig.version,
+          description: buildConfig.description,
+          copyright: buildConfig.copyright,
+          apiUrl: buildConfig.apiUrl || undefined,
+          icon: buildConfig.iconId || undefined
         })
       });
 
@@ -134,14 +172,14 @@ export default function Builder() {
   };
 
   const downloadBuild = () => {
-    const token = localStorage.getItem('token');
-    const url = `${BASE_API}/v${API_VERSION}/build/download?language=${buildConfig.language}&appName=${encodeURIComponent(buildConfig.appName)}`;
+    const url = `${BASE_API}/v${API_VERSION}/build/download?buildId=${buildIdRef.current}&appName=${encodeURIComponent(buildConfig.appName)}`;
     window.open(url, '_blank');
   };
 
   const resetBuilder = () => {
     setBuildStep('config');
     buildIdRef.current = null;
+    setIconPreview(null);
     setBuildStatus({
       progress: 0,
       message: '',
@@ -160,7 +198,7 @@ export default function Builder() {
   };
 
   return (
-    <div className="h-screen bg-gray-50 pb-16">
+    <div className="h-screen bg-gray-50 pb-16 overflow-y-auto">
       <header className="p-4 bg-white">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -178,11 +216,10 @@ export default function Builder() {
 
       <div className="p-4">
         {buildStep === 'config' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="bg-white p-4 rounded-lg shadow-sm">
-              <h2 className="font-medium text-lg mb-4">Build Configuration</h2>
-
-              <div className="space-y-4">
+              <h2 className="font-medium text-lg mb-4">General</h2>
+              <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium mb-1">Application Name</label>
                   <input
@@ -193,18 +230,44 @@ export default function Builder() {
                     className="w-full p-2 border rounded-lg"
                   />
                 </div>
-
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Version</label>
+                    <input
+                      type="text"
+                      value={buildConfig.version}
+                      onChange={(e) => manageConfigChange('version', e.target.value)}
+                      placeholder="1.0.0"
+                      className="w-full p-2 border rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Copyright</label>
+                    <input
+                      type="text"
+                      value={buildConfig.copyright}
+                      onChange={(e) => manageConfigChange('copyright', e.target.value)}
+                      placeholder="2026 MyCompany"
+                      className="w-full p-2 border rounded-lg"
+                    />
+                  </div>
+                </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Version</label>
+                  <label className="block text-sm font-medium mb-1">Description</label>
                   <input
                     type="text"
-                    value={buildConfig.version}
-                    onChange={(e) => manageConfigChange('version', e.target.value)}
-                    placeholder="1.0.0"
+                    value={buildConfig.description}
+                    onChange={(e) => manageConfigChange('description', e.target.value)}
+                    placeholder="Remote desktop client"
                     className="w-full p-2 border rounded-lg"
                   />
                 </div>
+              </div>
+            </div>
 
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h2 className="font-medium text-lg mb-4">Configuration</h2>
+              <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium mb-1">Language</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -232,32 +295,55 @@ export default function Builder() {
                     </button>
                   </div>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium mb-1">Application Icon</label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => document.getElementById('icon-upload').click()}
-                    >
-                      Select Icon File
-                    </Button>
-                    <input
-                      id="icon-upload"
-                      type="file"
-                      accept=".ico,.png,.icns"
-                      className="hidden"
-                      onChange={(e) => manageConfigChange('icon', e.target.files[0])}
-                    />
-                    {buildConfig.icon && (
-                      <div className="flex items-center gap-1 text-sm text-green-600">
-                        <Check className="w-4 h-4" />
-                        <span>{buildConfig.icon.name}</span>
-                      </div>
-                    )}
-                  </div>
+                  <label className="block text-sm font-medium mb-1">
+                    <div className="flex items-center gap-1">
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>API URL</span>
+                    </div>
+                  </label>
+                  <input
+                    type="text"
+                    value={buildConfig.apiUrl}
+                    onChange={(e) => manageConfigChange('apiUrl', e.target.value)}
+                    placeholder="http://localhost:8080/api"
+                    className="w-full p-2 border rounded-lg font-mono text-sm"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Leave empty for default (localhost:8080)</p>
                 </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h2 className="font-medium text-lg mb-4">Icon</h2>
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 transition-colors overflow-hidden"
+                  onClick={() => document.getElementById('icon-upload').click()}
+                >
+                  {iconPreview ? (
+                    <img src={iconPreview} alt="Icon" className="w-full h-full object-contain" />
+                  ) : (
+                    <Upload className="w-6 h-6 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => document.getElementById('icon-upload').click()}
+                  >
+                    {buildConfig.icon ? buildConfig.icon.name : 'Select Icon File'}
+                  </Button>
+                  <p className="text-xs text-gray-400 mt-1">ICO format recommended, 256x256px</p>
+                </div>
+                <input
+                  id="icon-upload"
+                  type="file"
+                  accept=".ico,.png"
+                  className="hidden"
+                  onChange={(e) => handleIconSelect(e.target.files[0])}
+                />
               </div>
             </div>
 
