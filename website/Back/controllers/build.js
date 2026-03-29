@@ -36,6 +36,7 @@ exports.startBuild = async (req, res) => {
     }
 
     if (!fs.existsSync(MSBUILD_PATH)) {
+        console.log('MSBUILD_PATH value:', JSON.stringify(MSBUILD_PATH));
         return res.status(500).json({ error: 'MSBuild not found on server.' });
     }
 
