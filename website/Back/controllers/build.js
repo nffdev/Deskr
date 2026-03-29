@@ -1,152 +1,239 @@
 const { spawn } = require('child_process');
+const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 
 const MSBUILD_PATH = process.env.MSBUILD_PATH;
+const BUILDER_DIR = path.resolve(__dirname, '../../../builder');
 
-const PROJECTS = {
+const TEMPLATES = {
     cs: {
-        path: path.resolve(__dirname, '../../../client_cs/client.csproj'),
-        outputDir: path.resolve(__dirname, '../../../client_cs/bin/Release'),
+        source: path.join(BUILDER_DIR, 'scripts/cs'),
+        projectFile: 'client.csproj',
+        outputDir: 'bin/Release',
         outputFile: 'client.exe',
+        configFile: 'Helpers/Constants.cs',
         buildArgs: ['-p:Configuration=Release', '-p:Platform=AnyCPU', '-t:Rebuild']
     },
     cpp: {
-        path: path.resolve(__dirname, '../../../client/client.vcxproj'),
-        outputDir: path.resolve(__dirname, '../../../client/Release'),
+        source: path.join(BUILDER_DIR, 'scripts/cpp'),
+        projectFile: 'client.vcxproj',
+        outputDir: 'Release',
         outputFile: 'client.exe',
+        configFile: 'helpers/constants.h',
         buildArgs: ['-p:Configuration=Release', '-p:Platform=Win32', '-t:Rebuild']
     }
 };
 
+function generateBuildId() {
+    return crypto.randomBytes(8).toString('hex');
+}
+
+function copyDirSync(src, dest) {
+    fs.mkdirSync(dest, { recursive: true });
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+    for (const entry of entries) {
+        const srcPath = path.join(src, entry.name);
+        const destPath = path.join(dest, entry.name);
+        if (entry.isDirectory()) {
+            copyDirSync(srcPath, destPath);
+        } else {
+            fs.copyFileSync(srcPath, destPath);
+        }
+    }
+}
+
+function injectConfig(filePath, replacements) {
+    let content = fs.readFileSync(filePath, 'utf-8');
+    for (const [key, value] of Object.entries(replacements)) {
+        content = content.replace(key, value);
+    }
+    fs.writeFileSync(filePath, content);
+}
+
+function writeConfigFile(buildId, config) {
+    const configPath = path.join(BUILDER_DIR, 'configs', buildId);
+    const lines = [
+        config.appName || 'DeskrClient',
+        config.description || 'Deskr Remote Desktop Client',
+        config.copyright || '',
+        config.version || '1.0.0',
+        config.icon || 'default',
+        config.apiUrl || 'http://localhost:8080/api',
+        config.language || 'cs'
+    ];
+    fs.writeFileSync(configPath, lines.join('\n'));
+}
+
+exports.uploadIcon = (req, res) => {
+    const { id, data } = req.body;
+    if (!id || !data) {
+        return res.status(400).json({ error: 'Icon id and base64 data are required.' });
+    }
+
+    try {
+        const buffer = Buffer.from(data, 'base64');
+        const iconPath = path.join(BUILDER_DIR, 'icons', `${id}.ico`);
+        fs.writeFileSync(iconPath, buffer);
+        res.json({ success: true, iconId: id });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to save icon.' });
+    }
+};
+
 exports.startBuild = async (req, res) => {
-    const { appName, language } = req.body;
+    const { appName, language, version, description, copyright, icon, apiUrl } = req.body;
 
     if (!appName || !language) {
         return res.status(400).json({ error: 'appName and language (cs or cpp) are required.' });
     }
 
-    const project = PROJECTS[language];
-    if (!project) {
+    const template = TEMPLATES[language];
+    if (!template) {
         return res.status(400).json({ error: 'Invalid language. Use "cs" or "cpp".' });
     }
 
-    if (!fs.existsSync(project.path)) {
-        return res.status(400).json({ error: `Project file not found: ${project.path}` });
-    }
-
     if (!fs.existsSync(MSBUILD_PATH)) {
-        console.log('MSBUILD_PATH value:', JSON.stringify(MSBUILD_PATH));
         return res.status(500).json({ error: 'MSBuild not found on server.' });
     }
 
+    const buildId = generateBuildId();
     const io = req.app.get('io');
-    const buildId = Date.now().toString();
 
     res.json({ buildId, message: 'Build started.' });
 
-    io.emit('buildProgress', { buildId, progress: 5, message: 'Starting MSBuild...' });
+    io.emit('buildProgress', { buildId, progress: 5, message: 'Preparing build environment...' });
 
-    const nugetRestore = language === 'cs';
+    const buildScriptDir = path.join(BUILDER_DIR, 'scripts', buildId);
+    const buildOutputDir = path.join(BUILDER_DIR, 'builds', buildId);
 
-    if (nugetRestore) {
-        io.emit('buildProgress', { buildId, progress: 10, message: 'Restoring NuGet packages...' });
+    try {
+        copyDirSync(template.source, buildScriptDir);
+        fs.mkdirSync(buildOutputDir, { recursive: true });
 
-        const nugetArgs = [project.path, '-t:Restore'];
-        const restoreProcess = spawn(MSBUILD_PATH, nugetArgs, {
-            cwd: path.dirname(project.path)
+        io.emit('buildProgress', { buildId, progress: 10, message: 'Injecting configuration...' });
+
+        const configFilePath = path.join(buildScriptDir, template.configFile);
+        injectConfig(configFilePath, {
+            '%BASE_API%': apiUrl || 'http://localhost:8080/api'
         });
 
-        await new Promise((resolve) => {
-            restoreProcess.on('close', () => resolve());
-        });
-    }
+        writeConfigFile(buildId, { appName, description, copyright, version, icon, apiUrl, language });
 
-    io.emit('buildProgress', { buildId, progress: 20, message: 'Compiling source code...' });
-
-    const args = [project.path, ...project.buildArgs];
-    const buildProcess = spawn(MSBUILD_PATH, args, {
-        cwd: path.dirname(project.path)
-    });
-
-    let buildOutput = '';
-    let buildErrors = '';
-
-    buildProcess.stdout.on('data', (data) => {
-        const text = data.toString();
-        buildOutput += text;
-
-        if (text.includes('Compiling') || text.includes('CoreCompile') || text.includes('Csc') || text.includes('ClCompile')) {
-            io.emit('buildProgress', { buildId, progress: 40, message: 'Compiling source files...' });
-        } else if (text.includes('Link') || text.includes('GenerateTargetFrameworkMonikerAttribute') || text.includes('ResolveAssemblyReference')) {
-            io.emit('buildProgress', { buildId, progress: 60, message: 'Linking dependencies...' });
-        } else if (text.includes('CopyFilesToOutputDirectory') || text.includes('Copie du fichier') || text.includes('_CopyOutOfDateSourceItemsToOutputDirectory')) {
-            io.emit('buildProgress', { buildId, progress: 80, message: 'Copying output files...' });
+        if (icon && icon !== 'default') {
+            const iconSrc = path.join(BUILDER_DIR, 'icons', `${icon}.ico`);
+            if (fs.existsSync(iconSrc)) {
+                const iconDest = path.join(buildScriptDir, 'app.ico');
+                fs.copyFileSync(iconSrc, iconDest);
+            }
         }
-    });
 
-    buildProcess.stderr.on('data', (data) => {
-        buildErrors += data.toString();
-    });
+        io.emit('buildProgress', { buildId, progress: 15, message: 'Restoring packages...' });
 
-    buildProcess.on('close', (code) => {
-        if (code !== 0) {
+        if (language === 'cs') {
+            const projectPath = path.join(buildScriptDir, template.projectFile);
+            const restoreProcess = spawn(MSBUILD_PATH, [projectPath, '-t:Restore'], {
+                cwd: buildScriptDir
+            });
+            await new Promise((resolve) => restoreProcess.on('close', () => resolve()));
+        }
+
+        io.emit('buildProgress', { buildId, progress: 20, message: 'Compiling source code...' });
+
+        const projectPath = path.join(buildScriptDir, template.projectFile);
+        const args = [projectPath, ...template.buildArgs];
+        const buildProcess = spawn(MSBUILD_PATH, args, { cwd: buildScriptDir });
+
+        let buildOutput = '';
+        let buildErrors = '';
+
+        buildProcess.stdout.on('data', (data) => {
+            const text = data.toString();
+            buildOutput += text;
+
+            if (text.includes('Compiling') || text.includes('CoreCompile') || text.includes('Csc') || text.includes('ClCompile')) {
+                io.emit('buildProgress', { buildId, progress: 40, message: 'Compiling source files...' });
+            } else if (text.includes('Link') || text.includes('GenerateTargetFrameworkMonikerAttribute') || text.includes('ResolveAssemblyReference')) {
+                io.emit('buildProgress', { buildId, progress: 60, message: 'Linking dependencies...' });
+            } else if (text.includes('CopyFilesToOutputDirectory') || text.includes('Copie du fichier') || text.includes('_CopyOutOfDateSourceItemsToOutputDirectory')) {
+                io.emit('buildProgress', { buildId, progress: 80, message: 'Copying output files...' });
+            }
+        });
+
+        buildProcess.stderr.on('data', (data) => {
+            buildErrors += data.toString();
+        });
+
+        buildProcess.on('close', (code) => {
+            if (code !== 0) {
+                try { fs.rmSync(buildScriptDir, { recursive: true, force: true }); } catch (e) { }
+
+                io.emit('buildProgress', {
+                    buildId,
+                    progress: 100,
+                    message: 'Build failed.',
+                    error: buildErrors || buildOutput.split('\n').filter(l => l.includes('error')).join('\n') || 'Unknown build error.',
+                    success: false
+                });
+                return;
+            }
+
+            const outputExe = path.join(buildScriptDir, template.outputDir, template.outputFile);
+            if (!fs.existsSync(outputExe)) {
+                try { fs.rmSync(buildScriptDir, { recursive: true, force: true }); } catch (e) { }
+
+                io.emit('buildProgress', {
+                    buildId,
+                    progress: 100,
+                    message: 'Build succeeded but executable not found.',
+                    error: `Expected at: ${outputExe}`,
+                    success: false
+                });
+                return;
+            }
+
+            const finalExe = path.join(buildOutputDir, `${appName}.exe`);
+            fs.copyFileSync(outputExe, finalExe);
+
+            try { fs.rmSync(buildScriptDir, { recursive: true, force: true }); } catch (e) { }
+
+            const stats = fs.statSync(finalExe);
+
             io.emit('buildProgress', {
                 buildId,
                 progress: 100,
-                message: 'Build failed.',
-                error: buildErrors || buildOutput.split('\n').filter(l => l.includes('error')).join('\n') || 'Unknown build error.',
-                success: false
+                message: 'Build completed successfully!',
+                success: true,
+                fileSize: stats.size,
+                fileName: `${appName}.exe`
             });
-            return;
-        }
+        });
 
-        const outputExe = path.join(project.outputDir, project.outputFile);
-        if (!fs.existsSync(outputExe)) {
-            io.emit('buildProgress', {
-                buildId,
-                progress: 100,
-                message: 'Build succeeded but executable not found.',
-                error: `Expected at: ${outputExe}`,
-                success: false
-            });
-            return;
-        }
-
-        const renamedExe = path.join(project.outputDir, `${appName}.exe`);
-        try {
-            fs.copyFileSync(outputExe, renamedExe);
-        } catch (e) { }
-
-        const finalPath = fs.existsSync(renamedExe) ? renamedExe : outputExe;
-        const stats = fs.statSync(finalPath);
+    } catch (err) {
+        try { fs.rmSync(buildScriptDir, { recursive: true, force: true }); } catch (e) { }
 
         io.emit('buildProgress', {
             buildId,
             progress: 100,
-            message: 'Build completed successfully!',
-            success: true,
-            fileSize: stats.size,
-            fileName: `${appName}.exe`
+            message: 'Build failed.',
+            error: err.message,
+            success: false
         });
-    });
+    }
 };
 
 exports.downloadBuild = (req, res) => {
-    const { language, appName } = req.query;
+    const { buildId, appName } = req.query;
 
-    const project = PROJECTS[language];
-    if (!project) {
-        return res.status(400).json({ error: 'Invalid language.' });
+    if (!buildId || !appName) {
+        return res.status(400).json({ error: 'buildId and appName are required.' });
     }
 
-    const renamedExe = path.join(project.outputDir, `${appName}.exe`);
-    const originalExe = path.join(project.outputDir, project.outputFile);
-    const filePath = fs.existsSync(renamedExe) ? renamedExe : originalExe;
+    const filePath = path.join(BUILDER_DIR, 'builds', buildId, `${appName}.exe`);
 
     if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'Build artifact not found. Please build first.' });
+        return res.status(404).json({ error: 'Build artifact not found.' });
     }
 
-    res.download(filePath, `${appName || 'client'}.exe`);
+    res.download(filePath, `${appName}.exe`);
 };
