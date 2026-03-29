@@ -7,9 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+node_modules/
+dist/
+dist-ssr/
 *.local
 
 # Editor directories and files
@@ -25,7 +25,12 @@ src/icons/discord.png
 
 .env
 
-.vs
-bin
-obj
-packages
+.vs/
+bin/
+obj/
+packages/
+
+builder/scripts/cpp/
+builder/scripts/cs/
+builder/builds/
+builder/icons/
