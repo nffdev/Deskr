@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const http = require('http');
 const socketIo = require('socket.io');
 const connectionsRouter = require('./routes/connections');
+const buildRouter = require('./routes/build');
 require('dotenv').config();
 
 const app = express();
@@ -34,6 +35,7 @@ const authRoutes = require('./routes/auth');
 app.use(base_route + '/users', usersRoutes);
 app.use(base_route + '/auth', authRoutes);
 app.use(base_route + '/connections', connectionsRouter);
+app.use(base_route + '/build', buildRouter);
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
