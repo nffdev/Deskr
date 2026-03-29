@@ -1,28 +1,75 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from "@/lib/hooks/useAuth";
 import BottomNav from "@/components/nav/BottomNav";
-import { Package, FileCode, Download, ArrowRight, Check, X, Loader2 } from 'lucide-react';
+import { Package, FileCode, Download, Check, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { BASE_API, API_VERSION } from "../../config.json";
+import io from 'socket.io-client';
 
 export default function Builder() {
   const { user } = useAuth();
-  const [buildStep, setBuildStep] = useState('config'); 
+  const [buildStep, setBuildStep] = useState('config');
   const [buildConfig, setBuildConfig] = useState({
     appName: '',
     version: '1.0.0',
-    platform: 'win',
+    language: 'cs',
     icon: null,
-    includeUpdater: true,
-    outputDir: './dist'
   });
   const [buildStatus, setBuildStatus] = useState({
     progress: 0,
     message: '',
     error: null,
-    buildTime: null
+    buildTime: null,
+    fileSize: null,
+    fileName: null,
+    success: null
   });
+  const socketRef = useRef(null);
+  const buildIdRef = useRef(null);
+  const startTimeRef = useRef(null);
+
+  useEffect(() => {
+    const socket = io(BASE_API.replace('/api', ''), {
+      transports: ['websocket', 'polling']
+    });
+    socketRef.current = socket;
+
+    socket.on('buildProgress', (data) => {
+      if (buildIdRef.current && data.buildId === buildIdRef.current) {
+        setBuildStatus(prev => ({
+          ...prev,
+          progress: data.progress,
+          message: data.message,
+          error: data.error || null
+        }));
+
+        if (data.progress === 100) {
+          const endTime = new Date();
+          const buildTime = ((endTime - startTimeRef.current) / 1000).toFixed(1);
+
+          setBuildStatus(prev => ({
+            ...prev,
+            buildTime,
+            fileSize: data.fileSize,
+            fileName: data.fileName,
+            success: data.success
+          }));
+
+          if (data.success) {
+            setBuildStep('complete');
+          } else {
+            setBuildStep('error');
+          }
+        }
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   const manageConfigChange = (field, value) => {
     setBuildConfig(prev => ({
@@ -31,61 +78,85 @@ export default function Builder() {
     }));
   };
 
-  const startBuild = () => {
+  const startBuild = async () => {
     if (!buildConfig.appName) {
-      alert('Application name is required');
+      alert('Le nom de l\'application est requis');
       return;
     }
 
     setBuildStep('building');
+    startTimeRef.current = new Date();
     setBuildStatus({
       progress: 0,
-      message: 'Initializing build process...',
+      message: 'Initialisation du build...',
       error: null,
-      buildTime: null
+      buildTime: null,
+      fileSize: null,
+      fileName: null,
+      success: null
     });
 
-    const startTime = new Date();
-    const buildSteps = [
-      { progress: 10, message: 'Preparing build environment...' },
-      { progress: 20, message: 'Compiling source code...' },
-      { progress: 40, message: 'Bundling dependencies...' },
-      { progress: 60, message: 'Creating executable...' },
-      { progress: 80, message: 'Packaging application...' },
-      { progress: 95, message: 'Finalizing build...' },
-      { progress: 100, message: 'Build completed successfully!' }
-    ];
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BASE_API}/v${API_VERSION}/build`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': token })
+        },
+        body: JSON.stringify({
+          appName: buildConfig.appName,
+          language: buildConfig.language
+        })
+      });
 
-    let stepIndex = 0;
-    const buildInterval = setInterval(() => {
-      if (stepIndex < buildSteps.length) {
+      const data = await response.json();
+
+      if (!response.ok) {
         setBuildStatus(prev => ({
           ...prev,
-          progress: buildSteps[stepIndex].progress,
-          message: buildSteps[stepIndex].message
+          error: data.error || 'Build failed to start.',
+          message: 'Build failed.'
         }));
-        stepIndex++;
-      } else {
-        clearInterval(buildInterval);
-        const endTime = new Date();
-        const buildTime = ((endTime - startTime) / 1000).toFixed(1);
-        setBuildStatus(prev => ({
-          ...prev,
-          buildTime
-        }));
-        setBuildStep('complete');
+        setBuildStep('error');
+        return;
       }
-    }, 1500);
+
+      buildIdRef.current = data.buildId;
+    } catch (err) {
+      setBuildStatus(prev => ({
+        ...prev,
+        error: err.message,
+        message: 'Failed to connect to build server.'
+      }));
+      setBuildStep('error');
+    }
+  };
+
+  const downloadBuild = () => {
+    const token = localStorage.getItem('token');
+    const url = `${BASE_API}/v${API_VERSION}/build/download?language=${buildConfig.language}&appName=${encodeURIComponent(buildConfig.appName)}`;
+    window.open(url, '_blank');
   };
 
   const resetBuilder = () => {
     setBuildStep('config');
+    buildIdRef.current = null;
     setBuildStatus({
       progress: 0,
       message: '',
       error: null,
-      buildTime: null
+      buildTime: null,
+      fileSize: null,
+      fileName: null,
+      success: null
     });
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 MB';
+    const mb = (bytes / (1024 * 1024)).toFixed(1);
+    return `${mb} MB`;
   };
 
   return (
@@ -110,56 +181,71 @@ export default function Builder() {
           <div className="space-y-6">
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <h2 className="font-medium text-lg mb-4">Build Configuration</h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Application Name</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={buildConfig.appName}
                     onChange={(e) => manageConfigChange('appName', e.target.value)}
                     placeholder="My Application"
                     className="w-full p-2 border rounded-lg"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-1">Version</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={buildConfig.version}
                     onChange={(e) => manageConfigChange('version', e.target.value)}
                     placeholder="1.0.0"
                     className="w-full p-2 border rounded-lg"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium mb-1">Platform</label>
-                  <select
-                    value={buildConfig.platform}
-                    onChange={(e) => manageConfigChange('platform', e.target.value)}
-                    className="w-full p-2 border rounded-lg"
-                  >
-                    <option value="win">Windows</option>
-                    <option value="android">Android</option>
-                    <option value="ios">IOS</option>
-                  </select>
+                  <label className="block text-sm font-medium mb-1">Language</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => manageConfigChange('language', 'cs')}
+                      className={`p-3 border rounded-lg text-center transition-all ${
+                        buildConfig.language === 'cs'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="block font-medium">C#</span>
+                      <span className="text-xs text-gray-500">.NET Framework</span>
+                    </button>
+                    <button
+                      onClick={() => manageConfigChange('language', 'cpp')}
+                      className={`p-3 border rounded-lg text-center transition-all ${
+                        buildConfig.language === 'cpp'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="block font-medium">C++</span>
+                      <span className="text-xs text-gray-500">Visual C++</span>
+                    </button>
+                  </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-1">Application Icon</label>
                   <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1"
                       onClick={() => document.getElementById('icon-upload').click()}
                     >
                       Select Icon File
                     </Button>
-                    <input 
+                    <input
                       id="icon-upload"
-                      type="file" 
+                      type="file"
                       accept=".ico,.png,.icns"
                       className="hidden"
                       onChange={(e) => manageConfigChange('icon', e.target.files[0])}
@@ -172,21 +258,10 @@ export default function Builder() {
                     )}
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="includeUpdater"
-                    checked={buildConfig.includeUpdater}
-                    onChange={(e) => manageConfigChange('includeUpdater', e.target.checked)}
-                    className="rounded"
-                  />
-                  <label htmlFor="includeUpdater" className="text-sm">Include auto-updater</label>
-                </div>
               </div>
             </div>
-            
-            <Button 
+
+            <Button
               className="w-full py-6 text-lg"
               onClick={startBuild}
             >
@@ -194,7 +269,7 @@ export default function Builder() {
             </Button>
           </div>
         )}
-        
+
         {buildStep === 'building' && (
           <div className="bg-white p-6 rounded-lg shadow-sm flex flex-col items-center">
             <div className="w-20 h-20 mb-6 relative">
@@ -225,20 +300,48 @@ export default function Builder() {
                 />
               </svg>
             </div>
-            
+
             <h2 className="text-xl font-medium mb-2">Building Application</h2>
+            <p className="text-gray-500 mb-1">{buildConfig.language === 'cs' ? 'C# (.NET)' : 'C++ (MSVC)'}</p>
             <p className="text-gray-500 mb-4">{buildStatus.message}</p>
-            
+
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
-              <div 
-                className="bg-blue-500 h-2.5 rounded-full transition-all duration-300" 
+              <div
+                className="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
                 style={{ width: `${buildStatus.progress}%` }}
               ></div>
             </div>
             <p className="text-sm text-gray-500">{buildStatus.progress}% Complete</p>
           </div>
         )}
-        
+
+        {buildStep === 'error' && (
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex flex-col items-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8 text-red-500" />
+              </div>
+              <h2 className="text-xl font-medium">Build Failed</h2>
+              <p className="text-gray-500 mt-1">{buildStatus.message}</p>
+            </div>
+
+            {buildStatus.error && (
+              <div className="border border-red-200 rounded-lg p-4 mb-6 bg-red-50">
+                <pre className="text-sm text-red-700 whitespace-pre-wrap overflow-x-auto max-h-48 overflow-y-auto">
+                  {buildStatus.error}
+                </pre>
+              </div>
+            )}
+
+            <Button
+              className="w-full"
+              onClick={resetBuilder}
+            >
+              Try Again
+            </Button>
+          </div>
+        )}
+
         {buildStep === 'complete' && (
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex flex-col items-center mb-6">
@@ -248,33 +351,35 @@ export default function Builder() {
               <h2 className="text-xl font-medium">Build Completed!</h2>
               <p className="text-gray-500 mt-1">Build time: {buildStatus.buildTime} seconds</p>
             </div>
-            
+
             <div className="border rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <FileCode className="w-5 h-5 text-blue-500" />
-                  <span className="font-medium">{buildConfig.appName}.exe</span>
+                  <span className="font-medium">{buildStatus.fileName || `${buildConfig.appName}.exe`}</span>
                 </div>
-                <span className="text-sm text-gray-500">{Math.floor(Math.random() * 50) + 10} MB</span>
+                <span className="text-sm text-gray-500">{formatFileSize(buildStatus.fileSize)}</span>
               </div>
-              <p className="text-sm text-gray-500 mb-4">Version {buildConfig.version} for {buildConfig.platform === 'win' ? 'Windows' : buildConfig.platform === 'mac' ? 'macOS' : 'Linux'}</p>
-              
-              <Button className="w-full flex items-center justify-center gap-2">
+              <p className="text-sm text-gray-500 mb-4">
+                Version {buildConfig.version} — {buildConfig.language === 'cs' ? 'C# (.NET Framework)' : 'C++ (MSVC)'}
+              </p>
+
+              <Button
+                className="w-full flex items-center justify-center gap-2"
+                onClick={downloadBuild}
+              >
                 <Download className="w-4 h-4" />
                 <span>Download Executable</span>
               </Button>
             </div>
-            
-            <div className="flex gap-4">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={resetBuilder}
-              >
-                Build Another
-              </Button>
-              <Button className="flex-1">View Build Logs</Button>
-            </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={resetBuilder}
+            >
+              Build Another
+            </Button>
           </div>
         )}
       </div>
