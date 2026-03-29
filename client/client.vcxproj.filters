@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -11,63 +11,75 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Source Files\Helpers">
+    <Filter Include="Source Files\helpers">
       <UniqueIdentifier>{a1b2c3d4-1111-2222-3333-444455556666}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Services">
+    <Filter Include="Source Files\services">
       <UniqueIdentifier>{a1b2c3d4-1111-2222-3333-444455557777}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Helpers">
+    <Filter Include="Source Files\network">
+      <UniqueIdentifier>{a1b2c3d4-1111-2222-3333-444455550001}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\helpers">
       <UniqueIdentifier>{a1b2c3d4-1111-2222-3333-444455558888}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Services">
+    <Filter Include="Header Files\services">
       <UniqueIdentifier>{a1b2c3d4-1111-2222-3333-444455559999}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\network">
+      <UniqueIdentifier>{a1b2c3d4-1111-2222-3333-444455550002}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\utils">
+      <UniqueIdentifier>{a1b2c3d4-1111-2222-3333-44445555aaaa}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Helpers\HttpClient.cpp">
-      <Filter>Source Files\Helpers</Filter>
+    <ClCompile Include="helpers\system_info.cpp">
+      <Filter>Source Files\helpers</Filter>
     </ClCompile>
-    <ClCompile Include="Helpers\SystemInfo.cpp">
-      <Filter>Source Files\Helpers</Filter>
+    <ClCompile Include="network\http_client.cpp">
+      <Filter>Source Files\network</Filter>
     </ClCompile>
-    <ClCompile Include="Services\Connection.cpp">
-      <Filter>Source Files\Services</Filter>
+    <ClCompile Include="services\connection.cpp">
+      <Filter>Source Files\services</Filter>
     </ClCompile>
-    <ClCompile Include="Services\Heartbeat.cpp">
-      <Filter>Source Files\Services</Filter>
+    <ClCompile Include="services\heartbeat.cpp">
+      <Filter>Source Files\services</Filter>
     </ClCompile>
-    <ClCompile Include="Services\IpService.cpp">
-      <Filter>Source Files\Services</Filter>
+    <ClCompile Include="services\ip_service.cpp">
+      <Filter>Source Files\services</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Helpers\Constants.h">
-      <Filter>Header Files\Helpers</Filter>
+    <ClInclude Include="helpers\constants.h">
+      <Filter>Header Files\helpers</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\HttpClient.h">
-      <Filter>Header Files\Helpers</Filter>
+    <ClInclude Include="helpers\parser.h">
+      <Filter>Header Files\helpers</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\JsonParser.h">
-      <Filter>Header Files\Helpers</Filter>
+    <ClInclude Include="helpers\models.h">
+      <Filter>Header Files\helpers</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Models.h">
-      <Filter>Header Files\Helpers</Filter>
+    <ClInclude Include="helpers\system_info.h">
+      <Filter>Header Files\helpers</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\SystemInfo.h">
-      <Filter>Header Files\Helpers</Filter>
+    <ClInclude Include="network\http_client.h">
+      <Filter>Header Files\network</Filter>
     </ClInclude>
-    <ClInclude Include="Services\Connection.h">
-      <Filter>Header Files\Services</Filter>
+    <ClInclude Include="services\connection.h">
+      <Filter>Header Files\services</Filter>
     </ClInclude>
-    <ClInclude Include="Services\Heartbeat.h">
-      <Filter>Header Files\Services</Filter>
+    <ClInclude Include="services\heartbeat.h">
+      <Filter>Header Files\services</Filter>
     </ClInclude>
-    <ClInclude Include="Services\IpService.h">
-      <Filter>Header Files\Services</Filter>
+    <ClInclude Include="services\ip_service.h">
+      <Filter>Header Files\services</Filter>
+    </ClInclude>
+    <ClInclude Include="utils\utils.h">
+      <Filter>Header Files\utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

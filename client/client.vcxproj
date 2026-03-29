@@ -136,21 +136,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Helpers\HttpClient.cpp" />
-    <ClCompile Include="Helpers\SystemInfo.cpp" />
-    <ClCompile Include="Services\Connection.cpp" />
-    <ClCompile Include="Services\Heartbeat.cpp" />
-    <ClCompile Include="Services\IpService.cpp" />
+    <ClCompile Include="helpers\system_info.cpp" />
+    <ClCompile Include="network\http_client.cpp" />
+    <ClCompile Include="services\connection.cpp" />
+    <ClCompile Include="services\heartbeat.cpp" />
+    <ClCompile Include="services\ip_service.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Helpers\Constants.h" />
-    <ClInclude Include="Helpers\HttpClient.h" />
-    <ClInclude Include="Helpers\JsonParser.h" />
-    <ClInclude Include="Helpers\Models.h" />
-    <ClInclude Include="Helpers\SystemInfo.h" />
-    <ClInclude Include="Services\Connection.h" />
-    <ClInclude Include="Services\Heartbeat.h" />
-    <ClInclude Include="Services\IpService.h" />
+    <ClInclude Include="helpers\constants.h" />
+    <ClInclude Include="helpers\parser.h" />
+    <ClInclude Include="network\http_client.h" />
+    <ClInclude Include="helpers\models.h" />
+    <ClInclude Include="helpers\system_info.h" />
+    <ClInclude Include="services\connection.h" />
+    <ClInclude Include="services\heartbeat.h" />
+    <ClInclude Include="services\ip_service.h" />
+    <ClInclude Include="utils\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
