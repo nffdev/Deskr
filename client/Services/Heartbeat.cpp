@@ -1,6 +1,6 @@
-#include "Heartbeat.h"
-#include "../Helpers/HttpClient.h"
-#include "../Helpers/Constants.h"
+#include "heartbeat.h"
+#include "../network/http_client.h"
+#include "../helpers/constants.h"
 #include <iostream>
 #include <chrono>
 

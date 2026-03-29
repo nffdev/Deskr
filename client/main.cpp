@@ -1,7 +1,8 @@
 #include <iostream>
 #include <string>
 #include <Windows.h>
-#include "Services/Connection.h"
+#include "services/connection.h"
+#include "utils/utils.h"
 
 int main() {
     CoInitializeEx(0, COINIT_MULTITHREADED);

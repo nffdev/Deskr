@@ -1,9 +1,9 @@
 #pragma once
 #include <string>
 #include <memory>
-#include "../Helpers/Models.h"
-#include "IpService.h"
-#include "Heartbeat.h"
+#include "../helpers/models.h"
+#include "ip_service.h"
+#include "heartbeat.h"
 
 class ConnectionService {
 public:

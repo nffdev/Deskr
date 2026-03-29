@@ -1,6 +1,6 @@
-#include "IpService.h"
-#include "../Helpers/HttpClient.h"
-#include "../Helpers/JsonParser.h"
+#include "ip_service.h"
+#include "../network/http_client.h"
+#include "../helpers/parser.h"
 #include <stdexcept>
 
 std::string IpService::GetPublicIp() {

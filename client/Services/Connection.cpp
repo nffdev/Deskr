@@ -1,8 +1,8 @@
-#include "Connection.h"
-#include "../Helpers/HttpClient.h"
-#include "../Helpers/Constants.h"
-#include "../Helpers/SystemInfo.h"
-#include "../Helpers/JsonParser.h"
+#include "connection.h"
+#include "../network/http_client.h"
+#include "../helpers/constants.h"
+#include "../helpers/system_info.h"
+#include "../helpers/parser.h"
 #include <iostream>
 #include <stdexcept>
 

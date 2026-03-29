@@ -1,4 +1,4 @@
-#include "HttpClient.h"
+#include "http_client.h"
 #include <sstream>
 
 HttpClient::UrlParts HttpClient::ParseUrl(const std::string& url) {

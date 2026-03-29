@@ -1,4 +1,4 @@
-#include "SystemInfo.h"
+#include "system_info.h"
 #include <Windows.h>
 #include <comdef.h>
 #include <Wbemidl.h>
