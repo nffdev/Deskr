@@ -18,7 +18,20 @@ app.use(cors({
 const { globalLimiter } = require('./middleware/rateLimiter');
 app.use(globalLimiter);
 
-app.listen(process.env.PORT, () => console.log(`Server listening on port ${process.env.PORT}`))
+const http = require('http');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:5173'],
+        methods: ['GET', 'POST']
+    }
+});
+
+app.set('io', io);
+
+server.listen(process.env.PORT, () => console.log(`Server listening on port ${process.env.PORT}`));
 
 mongoose.connect(process.env.MONGO_URL)
     .then(() => {
