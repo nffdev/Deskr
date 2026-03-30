@@ -31,7 +31,7 @@ namespace client.Services
             try 
             {
                 var ip = await _ipService.GetPublicIpAsync();
-                var deviceInfo = SystemInfo.GetOperatingSystem();
+                var deviceInfo = SystemInfo.GetDeviceInfo();
                 
                 var connectionInfo = new ConnectionRequest
                 {
