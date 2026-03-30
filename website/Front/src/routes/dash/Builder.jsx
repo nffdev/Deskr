@@ -98,7 +98,7 @@ export default function Builder() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token && { 'Authorization': token })
+            ...(token && { 'Authorization': `Bearer ${token}` })
           },
           body: JSON.stringify({ id: iconId, data: base64 })
         });
@@ -135,7 +135,7 @@ export default function Builder() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': token })
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({
           appName: buildConfig.appName,
@@ -171,9 +171,18 @@ export default function Builder() {
     }
   };
 
-  const downloadBuild = () => {
-    const url = `${BASE_API}/v${API_VERSION}/build/download?buildId=${buildIdRef.current}&appName=${encodeURIComponent(buildConfig.appName)}`;
-    window.open(url, '_blank');
+  const downloadBuild = async () => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${BASE_API}/v${API_VERSION}/build/download?buildId=${buildIdRef.current}&appName=${encodeURIComponent(buildConfig.appName)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${buildConfig.appName}.exe`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const resetBuilder = () => {
