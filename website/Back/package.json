@@ -27,8 +27,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.1.0",
     "node-fetch": "^2.6.1",
+    "socket.io": "^4.8.3",
     "ws": "^8.16.0",
     "zod": "^4.3.6"
-  },
-  "devDependencies": {}
+  }
 }
