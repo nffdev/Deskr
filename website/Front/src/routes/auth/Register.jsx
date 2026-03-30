@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function Register() {
     const [datas, setDatas] = useState({ username: '', email: '', password: '', confirmPassword: '' });
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     async function register() {
         if (!datas.username) return setError('Username is required.');
@@ -14,6 +16,8 @@ export default function Register() {
         if (!datas.confirmPassword) return setError('Password is required.');
         if (datas.password !== datas.confirmPassword) return setError('Passwords are not matching.');
 
+        setLoading(true);
+        setError('');
         fetch('http://localhost:8080/api/v1/auth/register', {
             method: 'POST',
             headers: {
@@ -30,7 +34,8 @@ export default function Register() {
                     setError(json.message || 'An error occured.');
                 }
             })
-            .catch(() => setError('An error occured.'));
+            .catch(() => setError('An error occured.'))
+            .finally(() => setLoading(false));
     }
 
     return (
@@ -56,7 +61,9 @@ export default function Register() {
                 </label>
                 <div className="flex items-center justify-between w-full px-8 mt-10">
                     <h2 className="text-2xl font-extrabold mt-2">S'inscrire</h2>
-                    <Button size='icon' onClick={() => register()}><box-icon class="h-8 w-8 fill-white" name='right-arrow-alt'></box-icon></Button>
+                    <Button size='icon' onClick={() => register()} disabled={loading}>
+                        {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <box-icon class="h-8 w-8 fill-white" name='right-arrow-alt'></box-icon>}
+                    </Button>
                 </div>
             </div>
             <div className="flex flex-col items-center justify-center gap-8 w-full">
