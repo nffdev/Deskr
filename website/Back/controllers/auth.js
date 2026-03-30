@@ -1,52 +1,37 @@
 const bcrypt = require('bcrypt');
 const crypto = require('node:crypto');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const register = async (req, res) => {
-    const { username, email, password, confirmPassword } = req.body;
-
-    if (!username) return res.status(400).json({ message: 'Username is required.' });
-    if (!email) return res.status(400).json({ message: 'Email is required.' });
-    if (!password) return res.status(400).json({ message: 'Password is required.' });
-    if (!confirmPassword) return res.status(400).json({ message: 'You must confirm your password.' });
-    if (password !== confirmPassword) return res.status(400).json({ message: 'Passwords are not matching.' });
-
-    const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,15}$/;
-    if (!usernameRegex.test(username)) return res.status(400).json({  message: 'The provided username is invalid.' });
+    const { username, email, password } = req.body;
 
     const existingUsername = await User.findOne({ username });
-    if (existingUsername) return res.status(400).json({  message: 'Username already in use.' });
-
-    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
-    if (!emailRegex.test(email)) return res.status(400).json({  message: 'The provided email is invalid.' });
+    if (existingUsername) return res.status(400).json({ message: 'Username already in use.' });
 
     const existingEmail = await User.findOne({ email });
-    if (existingEmail) return res.status(400).json({  message: 'Email already in use.' });
-
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) return res.status(400).json({ message: 'The password must contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one number and one special character.' });
+    if (existingEmail) return res.status(400).json({ message: 'Email already in use.' });
 
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const token = crypto.randomBytes(24).toString('hex');
+    const userId = crypto.randomUUID();
 
-    const user = new User({ id: crypto.randomUUID(), username, email, password: hashedPassword, token });
+    const user = new User({ id: userId, username, email, password: hashedPassword });
     await user.save();
 
+    const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
     return res.json({ token });
 }
 
 const login = async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email) return res.status(400).json({ message: 'Email is required.' });
-    if (!password) return res.status(400).json({ message: 'Password is required.' });
-
     const existing = await User.findOne({ email });
 
     if (!existing) return res.status(400).json({ message: 'Email or password is invalid.' });
     if (!bcrypt.compareSync(password, existing.password)) return res.status(400).json({  message: 'Email or password is invalid.' });
 
-    return res.json({ token: existing.token });
+    const token = jwt.sign({ id: existing.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    return res.json({ token });
 }
 
 module.exports = {

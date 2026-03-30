@@ -1,13 +1,13 @@
-const express = require('express');
-const router = express.Router();
+const { Router } = require('express');
+const router = Router();
+
 const connection = require('../controllers/connection');
+const { asyncHandler } = require('../utils');
+const auth = require('../middleware/auth');
 
-router.post('/', connection.recordConnection);
-
-router.get('/recent', connection.getRecentConnections);
-
-router.put('/:id/inactive', connection.markInactive);
-
-router.post('/:id/heartbeat', connection.handleHeartbeat);  
+router.post('/', asyncHandler(connection.recordConnection));
+router.get('/recent', auth, asyncHandler(connection.getRecentConnections));
+router.put('/:id/inactive', auth, asyncHandler(connection.markInactive));
+router.post('/:id/heartbeat', asyncHandler(connection.handleHeartbeat));
 
 module.exports = router;
