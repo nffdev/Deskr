@@ -3,7 +3,8 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 
-const MSBUILD_PATH = process.env.MSBUILD_PATH;
+const BUILD_ENGINE = process.env.BUILD_ENGINE || 'msbuild';
+const BUILD_PATH = process.env.BUILD_PATH || process.env.MSBUILD_PATH;
 const BUILDER_DIR = path.resolve(__dirname, '../../../builder');
 
 const TEMPLATES = {
@@ -13,7 +14,14 @@ const TEMPLATES = {
         outputDir: 'bin/Release',
         outputFile: 'client.exe',
         configFile: 'Helpers/Constants.cs',
-        buildArgs: ['-p:Configuration=Release', '-p:Platform=AnyCPU', '-t:Rebuild']
+        msbuild: {
+            buildArgs: ['-p:Configuration=Release', '-p:Platform=AnyCPU', '-t:Rebuild'],
+            restoreArgs: ['-t:Restore']
+        },
+        dotnet: {
+            buildArgs: ['build', '--configuration', 'Release'],
+            restoreArgs: ['restore']
+        }
     },
     cpp: {
         source: path.join(BUILDER_DIR, 'scripts/cpp'),
@@ -21,9 +29,17 @@ const TEMPLATES = {
         outputDir: 'Release',
         outputFile: 'client.exe',
         configFile: 'helpers/constants.h',
-        buildArgs: ['-p:Configuration=Release', '-p:Platform=Win32', '-t:Rebuild']
+        msbuild: {
+            buildArgs: ['-p:Configuration=Release', '-p:Platform=Win32', '-t:Rebuild'],
+            restoreArgs: []
+        },
+        dotnet: {
+            buildArgs: ['build', '--configuration', 'Release', '/p:Platform=Win32'],
+            restoreArgs: ['restore']
+        }
     }
 };
+
 
 function generateBuildId() {
     return crypto.randomBytes(8).toString('hex');
@@ -93,8 +109,8 @@ exports.startBuild = async (req, res) => {
         return res.status(400).json({ error: 'Invalid language. Use "cs" or "cpp".' });
     }
 
-    if (!fs.existsSync(MSBUILD_PATH)) {
-        return res.status(500).json({ error: 'MSBuild not found on server.' });
+    if (!BUILD_PATH) {
+        return res.status(500).json({ error: 'Build tool path not configured.' });
     }
 
     const buildId = generateBuildId();
@@ -130,19 +146,23 @@ exports.startBuild = async (req, res) => {
 
         io.emit('buildProgress', { buildId, progress: 15, message: 'Restoring packages...' });
 
-        if (language === 'cs') {
-            const projectPath = path.join(buildScriptDir, template.projectFile);
-            const restoreProcess = spawn(MSBUILD_PATH, [projectPath, '-t:Restore'], {
-                cwd: buildScriptDir
-            });
+        const engineConfig = template[BUILD_ENGINE];
+        const projectFilePath = path.join(buildScriptDir, template.projectFile);
+
+        if (engineConfig.restoreArgs.length > 0) {
+            const restoreArgs = BUILD_ENGINE === 'msbuild'
+                ? [projectFilePath, ...engineConfig.restoreArgs]
+                : [...engineConfig.restoreArgs, projectFilePath];
+            const restoreProcess = spawn(BUILD_PATH, restoreArgs, { cwd: buildScriptDir });
             await new Promise((resolve) => restoreProcess.on('close', () => resolve()));
         }
 
         io.emit('buildProgress', { buildId, progress: 20, message: 'Compiling source code...' });
 
-        const projectPath = path.join(buildScriptDir, template.projectFile);
-        const args = [projectPath, ...template.buildArgs];
-        const buildProcess = spawn(MSBUILD_PATH, args, { cwd: buildScriptDir });
+        const buildArgs = BUILD_ENGINE === 'msbuild'
+            ? [projectFilePath, ...engineConfig.buildArgs]
+            : [...engineConfig.buildArgs, projectFilePath];
+        const buildProcess = spawn(BUILD_PATH, buildArgs, { cwd: buildScriptDir });
 
         let buildOutput = '';
         let buildErrors = '';
