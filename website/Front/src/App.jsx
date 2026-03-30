@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthWrapper } from "@/lib/hooks/useAuth";
 import { UserContextProvider } from "@/lib/contexts/userContext";
 import useRouter from "@/lib/hooks/useRouter";
+import NotFound from "@/routes/NotFound";
 
 export default function App() {
   const routes = useRouter();
@@ -14,7 +15,7 @@ export default function App() {
             {routes.map(({ path, component: Component }) => (
               <Route key={path} path={path} element={<Component />} />
             ))}
-            <Route path="*" element={<h1>404: Not found</h1>} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthWrapper>
       </UserContextProvider>
