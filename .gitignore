@@ -33,4 +33,5 @@ packages/
 builder/scripts/cpp/
 builder/scripts/cs/
 builder/builds/
+builder/configs/
 builder/icons/
