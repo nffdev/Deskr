@@ -8,7 +8,7 @@
 
 ConnectionResponse ConnectionService::Connect() {
     auto ip = _ipService.GetPublicIp();
-    auto deviceInfo = SystemInfo::GetOperatingSystem();
+    auto deviceInfo = SystemInfo::GetDeviceInfo();
 
     ConnectionRequest request;
     request.ip = ip;

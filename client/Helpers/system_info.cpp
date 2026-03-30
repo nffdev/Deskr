@@ -28,7 +28,7 @@ namespace SystemInfo {
         }
 
         IWbemServices* pSvc = NULL;
-        hr = pLoc->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc);
+        hr = pLoc->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, 0, 0, 0, &pSvc);
 
         if (FAILED(hr)) {
             pLoc->Release();
@@ -75,6 +75,21 @@ namespace SystemInfo {
         }
 
         return "Windows";
+    }
+
+    std::string GetArchitecture() {
+        SYSTEM_INFO si;
+        GetNativeSystemInfo(&si);
+        switch (si.wProcessorArchitecture) {
+            case PROCESSOR_ARCHITECTURE_AMD64: return "x64";
+            case PROCESSOR_ARCHITECTURE_ARM64: return "ARM64";
+            case PROCESSOR_ARCHITECTURE_INTEL: return "x86";
+            default: return "Unknown";
+        }
+    }
+
+    std::string GetDeviceInfo() {
+        return GetOperatingSystem() + " (" + GetArchitecture() + ")";
     }
 
 }
