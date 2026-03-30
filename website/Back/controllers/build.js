@@ -11,29 +11,33 @@ const TEMPLATES = {
     cs: {
         source: path.join(BUILDER_DIR, 'scripts/cs'),
         projectFile: 'client.csproj',
-        outputDir: 'bin/Release',
-        outputFile: 'client.exe',
         configFile: 'Helpers/Constants.cs',
         msbuild: {
+            outputDir: 'bin/Release',
+            outputFile: 'client.exe',
             buildArgs: ['-p:Configuration=Release', '-p:Platform=AnyCPU', '-t:Rebuild'],
             restoreArgs: ['-t:Restore']
         },
         dotnet: {
-            buildArgs: ['build', '--configuration', 'Release'],
-            restoreArgs: ['restore']
+            outputDir: 'bin/Release/net10.0/win-x64/publish',
+            outputFile: 'client.exe',
+            buildArgs: ['publish', '--configuration', 'Release', '-r', 'win-x64', '--self-contained', 'true', '/p:PublishSingleFile=true'],
+            restoreArgs: ['restore', '-r', 'win-x64']
         }
     },
     cpp: {
         source: path.join(BUILDER_DIR, 'scripts/cpp'),
         projectFile: 'client.vcxproj',
-        outputDir: 'Release',
-        outputFile: 'client.exe',
         configFile: 'helpers/constants.h',
         msbuild: {
+            outputDir: 'Release',
+            outputFile: 'client.exe',
             buildArgs: ['-p:Configuration=Release', '-p:Platform=Win32', '-t:Rebuild'],
             restoreArgs: []
         },
         dotnet: {
+            outputDir: 'bin/Release',
+            outputFile: 'client.exe',
             buildArgs: ['build', '--configuration', 'Release', '/p:Platform=Win32'],
             restoreArgs: ['restore']
         }
@@ -198,7 +202,7 @@ exports.startBuild = async (req, res) => {
                 return;
             }
 
-            const outputExe = path.join(buildScriptDir, template.outputDir, template.outputFile);
+            const outputExe = path.join(buildScriptDir, engineConfig.outputDir, engineConfig.outputFile);
             if (!fs.existsSync(outputExe)) {
                 try { fs.rmSync(buildScriptDir, { recursive: true, force: true }); } catch (e) { }
 
@@ -212,7 +216,8 @@ exports.startBuild = async (req, res) => {
                 return;
             }
 
-            const finalExe = path.join(buildOutputDir, `${appName}.exe`);
+            const ext = engineConfig.outputFile.includes('.') ? path.extname(engineConfig.outputFile) : '';
+            const finalExe = path.join(buildOutputDir, `${appName}${ext}`);
             fs.copyFileSync(outputExe, finalExe);
 
             try { fs.rmSync(buildScriptDir, { recursive: true, force: true }); } catch (e) { }
@@ -225,7 +230,7 @@ exports.startBuild = async (req, res) => {
                 message: 'Build completed successfully!',
                 success: true,
                 fileSize: stats.size,
-                fileName: `${appName}.exe`
+                fileName: `${appName}${ext}`
             });
         });
 
