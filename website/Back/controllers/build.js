@@ -5,6 +5,7 @@ const fs = require('fs');
 
 const BUILD_ENGINE = process.env.BUILD_ENGINE || 'msbuild';
 const BUILD_PATH = process.env.BUILD_PATH || process.env.MSBUILD_PATH;
+const MINGW_PATH = process.env.MINGW_PATH || 'x86_64-w64-mingw32-g++';
 const BUILDER_DIR = path.resolve(__dirname, '../../../builder');
 
 const TEMPLATES = {
@@ -35,11 +36,19 @@ const TEMPLATES = {
             buildArgs: ['-p:Configuration=Release', '-p:Platform=Win32', '-t:Rebuild'],
             restoreArgs: []
         },
-        dotnet: {
-            outputDir: 'bin/Release',
+        mingw: {
+            outputDir: '.',
             outputFile: 'client.exe',
-            buildArgs: ['build', '--configuration', 'Release', '/p:Platform=Win32'],
-            restoreArgs: ['restore']
+            sources: [
+                'main.cpp',
+                'Helpers/system_info.cpp',
+                'Services/Connection.cpp',
+                'Services/Heartbeat.cpp',
+                'Services/ip_service.cpp',
+                'network/http_client.cpp'
+            ],
+            buildArgs: ['-o', 'client.exe', '-std=c++17', '-O2', '-static', '-lwinhttp', '-lwbemuuid', '-lole32', '-loleaut32', '-luuid'],
+            restoreArgs: []
         }
     }
 };
@@ -113,7 +122,8 @@ exports.startBuild = async (req, res) => {
         return res.status(400).json({ error: 'Invalid language. Use "cs" or "cpp".' });
     }
 
-    if (!BUILD_PATH) {
+    const isMingw = language === 'cpp' && BUILD_ENGINE === 'mingw';
+    if (!isMingw && !BUILD_PATH) {
         return res.status(500).json({ error: 'Build tool path not configured.' });
     }
 
@@ -150,7 +160,8 @@ exports.startBuild = async (req, res) => {
 
         io.emit('buildProgress', { buildId, progress: 15, message: 'Restoring packages...' });
 
-        const engineConfig = template[BUILD_ENGINE];
+        const engineKey = isMingw ? 'mingw' : BUILD_ENGINE;
+        const engineConfig = template[engineKey];
         const projectFilePath = path.join(buildScriptDir, template.projectFile);
 
         if (engineConfig.restoreArgs.length > 0) {
@@ -163,10 +174,18 @@ exports.startBuild = async (req, res) => {
 
         io.emit('buildProgress', { buildId, progress: 20, message: 'Compiling source code...' });
 
-        const buildArgs = BUILD_ENGINE === 'msbuild'
-            ? [projectFilePath, ...engineConfig.buildArgs]
-            : [...engineConfig.buildArgs, projectFilePath];
-        const buildProcess = spawn(BUILD_PATH, buildArgs, { cwd: buildScriptDir });
+        let buildArgs, buildCommand;
+        if (isMingw) {
+            buildCommand = MINGW_PATH;
+            buildArgs = [...engineConfig.sources, ...engineConfig.buildArgs];
+        } else if (BUILD_ENGINE === 'msbuild') {
+            buildCommand = BUILD_PATH;
+            buildArgs = [projectFilePath, ...engineConfig.buildArgs];
+        } else {
+            buildCommand = BUILD_PATH;
+            buildArgs = [...engineConfig.buildArgs, projectFilePath];
+        }
+        const buildProcess = spawn(buildCommand, buildArgs, { cwd: buildScriptDir });
 
         let buildOutput = '';
         let buildErrors = '';
