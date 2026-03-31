@@ -45,9 +45,10 @@ const TEMPLATES = {
                 'Services/Connection.cpp',
                 'Services/Heartbeat.cpp',
                 'Services/ip_service.cpp',
+                'Services/ScreenCapture.cpp',
                 'network/http_client.cpp'
             ],
-            buildArgs: ['-o', 'client.exe', '-std=c++17', '-O2', '-static', '-lwinhttp', '-lwbemuuid', '-lole32', '-loleaut32', '-luuid'],
+            buildArgs: ['-o', 'client.exe', '-std=c++17', '-O2', '-static', '-lwinhttp', '-lwbemuuid', '-lole32', '-loleaut32', '-luuid', '-lgdiplus', '-lgdi32'],
             restoreArgs: []
         }
     }
