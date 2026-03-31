@@ -48,6 +48,16 @@ export default function Remote() {
   };
 
   useEffect(() => {
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setFullscreen(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  useEffect(() => {
     const socket = io(config.BASE_API.replace('/api', ''), {
       transports: ['websocket', 'polling']
     });
@@ -192,7 +202,10 @@ export default function Remote() {
           <div className="space-y-3">
             {showToolbar && !fullscreen && (
               <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl p-2 flex items-center gap-1 sm:gap-2 overflow-x-auto">
-                <ToolbarBtn icon={Maximize2} label="Fullscreen" onClick={() => setFullscreen(true)} />
+                <ToolbarBtn icon={Maximize2} label="Fullscreen" onClick={() => {
+                  setFullscreen(true);
+                  screenRef.current?.requestFullscreen?.();
+                }} />
                 <ToolbarBtn icon={MousePointer2} label="Cursor" active />
                 <ToolbarBtn icon={Keyboard} label="Keyboard" onClick={() => setShowKeyboard(!showKeyboard)} active={showKeyboard} />
                 <ToolbarBtn icon={Camera} label="Screenshot" />
@@ -235,7 +248,10 @@ export default function Remote() {
 
               {fullscreen && (
                 <button
-                  onClick={() => setFullscreen(false)}
+                  onClick={() => {
+                    document.exitFullscreen?.();
+                    setFullscreen(false);
+                  }}
                   className="absolute top-3 right-3 z-20 p-2 bg-black/60 backdrop-blur-sm rounded-lg border border-white/10 hover:bg-black/80 transition-colors"
                 >
                   <Minimize2 className="w-4 h-4 text-white" />
