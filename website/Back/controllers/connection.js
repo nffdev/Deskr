@@ -65,9 +65,29 @@ const markInactive = async (req, res) => {
     res.json(connection);
 };
 
+const receiveScreen = async (req, res) => {
+    const { id } = req.params;
+    const { frame } = req.body;
+
+    if (!frame) {
+        return res.status(400).json({ message: 'Frame data is required' });
+    }
+
+    const io = req.app.get('io');
+    io.emit('screenFrame', { connectionId: id, frame });
+
+    res.json({ success: true });
+};
+
+const getLatestScreen = async (req, res) => {
+    res.json({ message: 'Use WebSocket for real-time screen frames' });
+};
+
 module.exports = {
     recordConnection,
     getRecentConnections,
     handleHeartbeat,
-    markInactive
+    markInactive,
+    receiveScreen,
+    getLatestScreen
 };

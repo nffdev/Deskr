@@ -12,7 +12,7 @@ app.use(bodyParser.json({ limit: '500mb' }));
 
 app.use(cors({
     origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:5173'],
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST', 'PUT']
 }));
 
 const { globalLimiter } = require('./middleware/rateLimiter');
