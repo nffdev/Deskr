@@ -21,15 +21,31 @@ export default function Remote() {
   const [showDeviceList, setShowDeviceList] = useState(false);
   const [screenFrame, setScreenFrame] = useState(null);
   const [latency, setLatency] = useState(null);
+  const [devices, setDevices] = useState([]);
   const screenRef = useRef(null);
   const socketRef = useRef(null);
   const lastFrameTime = useRef(null);
 
-  const devices = [
-    { id: 1, name: 'Desktop-PC-01', os: 'Windows 11', status: 'online', ip: '192.168.1.42' },
-    { id: 2, name: 'Laptop-Work', os: 'Windows 10', status: 'online', ip: '192.168.1.58' },
-    { id: 3, name: 'Server-Prod', os: 'Windows Server', status: 'offline', ip: '10.0.0.12' },
-  ];
+  const API_BASE = `${config.BASE_API}/v${config.API_VERSION}`;
+
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+
+  const fetchDevices = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/connections/recent`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDevices(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch devices:', err);
+    }
+  };
 
   useEffect(() => {
     const socket = io(config.BASE_API.replace('/api', ''), {
@@ -91,7 +107,7 @@ export default function Remote() {
               <h1 className="font-semibold text-sm sm:text-base text-white">Remote Control</h1>
               <div className="flex items-center gap-2">
                 <span className="text-xs sm:text-sm text-gray-500">
-                  {connected ? `Connected to ${selectedDevice?.name}` : 'No active session'}
+                  {connected ? `Connected to ${selectedDevice?.deviceInfo}` : 'No active session'}
                 </span>
                 {connected && (
                   <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500/10 rounded text-[10px] text-green-400 font-medium">
@@ -116,13 +132,16 @@ export default function Remote() {
             <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 sm:p-5">
               <h2 className="font-semibold text-base sm:text-lg text-white mb-4">Select Device</h2>
               <div className="space-y-2">
+                {devices.length === 0 && (
+                  <p className="text-center text-sm text-gray-500 py-4">No devices found.</p>
+                )}
                 {devices.map((device) => (
                   <button
-                    key={device.id}
-                    onClick={() => device.status === 'online' && manageConnect(device)}
-                    disabled={device.status === 'offline'}
+                    key={device._id}
+                    onClick={() => device.isActive && manageConnect(device)}
+                    disabled={!device.isActive}
                     className={`w-full p-3 sm:p-4 rounded-xl border flex items-center gap-3 transition-all ${
-                      device.status === 'offline'
+                      !device.isActive
                         ? 'border-white/[0.04] bg-gray-800/20 opacity-50 cursor-not-allowed'
                         : 'border-white/[0.06] bg-gray-800/30 hover:border-purple-500/30 hover:bg-gray-800/50 cursor-pointer'
                     }`}
@@ -131,13 +150,13 @@ export default function Remote() {
                       <Monitor className="w-5 h-5 text-gray-400" />
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm sm:text-base text-white font-medium truncate">{device.name}</p>
-                      <p className="text-[10px] sm:text-xs text-gray-500">{device.os} — {device.ip}</p>
+                      <p className="text-sm sm:text-base text-white font-medium truncate">{device.deviceInfo}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500">{device.ip}</p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <div className={`w-2 h-2 rounded-full ${device.status === 'online' ? 'bg-green-500' : 'bg-red-500'}`} />
-                      <span className={`text-xs ${device.status === 'online' ? 'text-green-400' : 'text-red-400'}`}>
-                        {device.status === 'online' ? 'Online' : 'Offline'}
+                      <div className={`w-2 h-2 rounded-full ${device.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
+                      <span className={`text-xs ${device.isActive ? 'text-green-400' : 'text-red-400'}`}>
+                        {device.isActive ? 'Online' : 'Offline'}
                       </span>
                     </div>
                   </button>
@@ -162,7 +181,7 @@ export default function Remote() {
               </div>
             </div>
             <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Connecting...</h2>
-            <p className="text-sm text-gray-400">Establishing connection to {selectedDevice?.name}</p>
+            <p className="text-sm text-gray-400">Establishing connection to {selectedDevice?.deviceInfo}</p>
             <div className="mt-4 flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
               <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -256,14 +275,11 @@ export default function Remote() {
               <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl p-3 sm:p-4 flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
                   <Monitor className="w-3.5 h-3.5 text-gray-500" />
-                  <span className="text-gray-400">{selectedDevice?.name}</span>
+                  <span className="text-gray-400">{selectedDevice?.deviceInfo}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Wifi className="w-3.5 h-3.5 text-green-400" />
                   <span className="text-gray-400">{selectedDevice?.ip}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">{selectedDevice?.os}</span>
                 </div>
               </div>
             )}
