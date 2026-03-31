@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from "@/lib/hooks/useAuth";
 import BottomNav from "@/components/nav/BottomNav";
 import { Settings as SettingsIcon, User, Lock, LogOut, ChevronRight, Mail, Shield, Bell, Palette, HardDrive } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
 import { BASE_API, API_VERSION } from "../../config.json";
 
 export default function Settings() {
@@ -246,9 +247,27 @@ export default function Settings() {
             {activeSection === 'notifications' && (
               <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 sm:p-5 space-y-4">
                 <h2 className="font-semibold text-base sm:text-lg text-white">Notifications</h2>
-                <ToggleRow label="Build notifications" description="Get notified when a build completes" defaultOn={true} />
-                <ToggleRow label="Connection alerts" description="Alert when a new device connects" defaultOn={true} />
-                <ToggleRow label="Security alerts" description="Notify on suspicious login attempts" defaultOn={true} />
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-white font-medium">Build notifications</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">Get notified when a build completes</p>
+                  </div>
+                  <Switch defaultChecked className="ml-3" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-white font-medium">Connection alerts</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">Alert when a new device connects</p>
+                  </div>
+                  <Switch defaultChecked className="ml-3" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-white font-medium">Security alerts</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">Notify on suspicious login attempts</p>
+                  </div>
+                  <Switch defaultChecked className="ml-3" />
+                </div>
               </div>
             )}
 
@@ -285,25 +304,6 @@ export default function Settings() {
       </div>
 
       <BottomNav />
-    </div>
-  );
-}
-
-function ToggleRow({ label, description, defaultOn }) {
-  const [enabled, setEnabled] = useState(defaultOn);
-
-  return (
-    <div className="flex items-center justify-between">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm text-white font-medium">{label}</p>
-        <p className="text-[10px] sm:text-xs text-gray-500">{description}</p>
-      </div>
-      <button
-        onClick={() => setEnabled(!enabled)}
-        className={`relative w-10 h-5.5 sm:w-11 sm:h-6 rounded-full transition-colors shrink-0 ml-3 ${enabled ? 'bg-purple-600' : 'bg-gray-700'}`}
-      >
-        <div className={`absolute top-0.5 w-4.5 h-4.5 sm:w-5 sm:h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5 sm:translate-x-5.5' : 'translate-x-0.5'}`} />
-      </button>
     </div>
   );
 }
