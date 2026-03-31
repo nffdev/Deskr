@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import BottomNav from "@/components/nav/BottomNav";
 import {
   Radio, Monitor, Maximize2, Minimize2, MousePointer2,
-  Keyboard, RotateCcw, Wifi, Camera
+  Keyboard, RotateCcw, Wifi, Camera, MonitorSmartphone, ChevronDown
 } from 'lucide-react';
 import io from 'socket.io-client';
 import config from '@/config.json';
@@ -22,6 +22,9 @@ export default function Remote() {
   const [screenFrame, setScreenFrame] = useState(null);
   const [latency, setLatency] = useState(null);
   const [devices, setDevices] = useState([]);
+  const [monitors, setMonitors] = useState([]);
+  const [activeMonitor, setActiveMonitor] = useState(0);
+  const [showMonitorPicker, setShowMonitorPicker] = useState(false);
   const screenRef = useRef(null);
   const socketRef = useRef(null);
   const lastFrameTime = useRef(null);
@@ -74,14 +77,57 @@ export default function Remote() {
       }
     });
 
+    socket.on('monitors', (data) => {
+      if (selectedDevice && data.connectionId === selectedDevice._id) {
+        setMonitors(data.monitors || []);
+      }
+    });
+
     return () => socket.disconnect();
   }, [selectedDevice]);
+
+  const fetchMonitors = async (deviceId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/connections/${deviceId}/monitors`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMonitors(data.monitors || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch monitors:', err);
+    }
+  };
+
+  const switchMonitor = async (index) => {
+    setActiveMonitor(index);
+    setShowMonitorPicker(false);
+    setScreenFrame(null);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ type: 'switchMonitor', monitorIndex: index })
+      });
+    } catch (err) {
+      console.error('Failed to switch monitor:', err);
+    }
+  };
 
   const manageConnect = (device) => {
     setSelectedDevice(device);
     setShowDeviceList(false);
     setConnecting(true);
     setScreenFrame(null);
+    setMonitors([]);
+    setActiveMonitor(0);
+    fetchMonitors(device._id);
     setTimeout(() => {
       setConnecting(false);
       setConnected(true);
@@ -93,6 +139,9 @@ export default function Remote() {
     setSelectedDevice(null);
     setScreenFrame(null);
     setLatency(null);
+    setMonitors([]);
+    setActiveMonitor(0);
+    setShowMonitorPicker(false);
   };
 
 
@@ -210,13 +259,51 @@ export default function Remote() {
                 <ToolbarBtn icon={Keyboard} label="Keyboard" onClick={() => setShowKeyboard(!showKeyboard)} active={showKeyboard} />
                 <ToolbarBtn icon={Camera} label="Screenshot" />
                 <ToolbarBtn icon={RotateCcw} label="Refresh" />
+                {monitors.length > 1 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowMonitorPicker(!showMonitorPicker)}
+                      className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-800/50 rounded-lg text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      <MonitorSmartphone className="w-3.5 h-3.5" />
+                      <span className="text-[10px] sm:text-xs whitespace-nowrap">Screen {activeMonitor + 1}</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${showMonitorPicker ? 'rotate-180' : ''}`} />
+                    </button>
+                    {showMonitorPicker && (
+                      <div className="absolute top-full mt-1 left-0 bg-gray-900 border border-white/[0.08] rounded-lg shadow-xl z-30 min-w-[180px] py-1">
+                        {monitors.map((m) => (
+                          <button
+                            key={m.index}
+                            onClick={() => switchMonitor(m.index)}
+                            className={`w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-800/60 transition-colors ${
+                              activeMonitor === m.index ? 'text-purple-400' : 'text-gray-300'
+                            }`}
+                          >
+                            <Monitor className="w-3.5 h-3.5 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium truncate">
+                                Screen {m.index + 1} {m.isPrimary ? '(Primary)' : ''}
+                              </p>
+                              <p className="text-[10px] text-gray-500">{m.width}×{m.height}</p>
+                            </div>
+                            {activeMonitor === m.index && (
+                              <div className="w-1.5 h-1.5 bg-purple-400 rounded-full ml-auto shrink-0" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex-1" />
                 <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-800/50 rounded-lg">
                   <div className={`w-1.5 h-1.5 rounded-full ${screenFrame ? 'bg-green-400' : 'bg-yellow-400'}`} />
                   <span className="text-[10px] sm:text-xs text-gray-400 whitespace-nowrap">{latency ? `${latency}ms` : '—'}</span>
                 </div>
                 <div className="px-2 sm:px-3 py-1.5 bg-gray-800/50 rounded-lg">
-                  <span className="text-[10px] sm:text-xs text-gray-400">1920×1080</span>
+                  <span className="text-[10px] sm:text-xs text-gray-400">
+                    {monitors[activeMonitor] ? `${monitors[activeMonitor].width}×${monitors[activeMonitor].height}` : '—'}
+                  </span>
                 </div>
               </div>
             )}
