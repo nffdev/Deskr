@@ -3,7 +3,25 @@
 #include <string>
 #include <atomic>
 #include <thread>
+#include <mutex>
 #include <Windows.h>
+
+struct MonitorInfo {
+    int index;
+    std::string name;
+    int x, y, width, height;
+    bool isPrimary;
+
+    std::string toJson() const {
+        return "{\"index\":" + std::to_string(index) +
+            ",\"name\":\"" + name + "\"" +
+            ",\"x\":" + std::to_string(x) +
+            ",\"y\":" + std::to_string(y) +
+            ",\"width\":" + std::to_string(width) +
+            ",\"height\":" + std::to_string(height) +
+            ",\"isPrimary\":" + (isPrimary ? "true" : "false") + "}";
+    }
+};
 
 class ScreenCapture {
 public:
@@ -13,15 +31,23 @@ public:
     void Start();
     void Stop();
     bool IsRunning() const;
+    void SetMonitor(int index);
 
-    static std::vector<BYTE> CaptureScreen(int quality = 50);
+    static std::vector<MonitorInfo> GetMonitors();
+    static std::vector<BYTE> CaptureScreen(int quality = 50, const MonitorInfo* monitor = nullptr);
     static std::string ToBase64(const std::vector<BYTE>& data);
+
+    void SendMonitorList();
 
 private:
     void CaptureLoop();
+    void CheckCommands();
 
     std::string _connectionId;
     int _intervalMs;
     std::atomic<bool> _running;
+    std::atomic<int> _monitorIndex;
     std::thread _thread;
+    std::vector<MonitorInfo> _monitors;
+    std::mutex _monitorMutex;
 };

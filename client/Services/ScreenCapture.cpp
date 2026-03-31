@@ -1,6 +1,7 @@
 #include "ScreenCapture.h"
 #include "../network/http_client.h"
 #include "../helpers/constants.h"
+#include "../helpers/parser.h"
 #include <gdiplus.h>
 #include <iostream>
 
@@ -37,9 +38,33 @@ static int GetEncoderClsid(const WCHAR* format, CLSID* pClsid) {
     return -1;
 }
 
+static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC, LPRECT, LPARAM dwData) {
+    auto* monitors = reinterpret_cast<std::vector<MonitorInfo>*>(dwData);
+
+    MONITORINFOEX mi;
+    mi.cbSize = sizeof(MONITORINFOEX);
+    GetMonitorInfo(hMonitor, &mi);
+
+    MonitorInfo info;
+    info.index = (int)monitors->size();
+    info.x = mi.rcMonitor.left;
+    info.y = mi.rcMonitor.top;
+    info.width = mi.rcMonitor.right - mi.rcMonitor.left;
+    info.height = mi.rcMonitor.bottom - mi.rcMonitor.top;
+    info.isPrimary = (mi.dwFlags & MONITORINFOF_PRIMARY) != 0;
+
+    char name[33];
+    WideCharToMultiByte(CP_UTF8, 0, mi.szDevice, -1, name, sizeof(name), nullptr, nullptr);
+    info.name = std::string(name);
+
+    monitors->push_back(info);
+    return TRUE;
+}
+
 ScreenCapture::ScreenCapture(const std::string& connectionId, int intervalMs)
-    : _connectionId(connectionId), _intervalMs(intervalMs), _running(false) {
+    : _connectionId(connectionId), _intervalMs(intervalMs), _running(false), _monitorIndex(0) {
     InitGdiPlus();
+    _monitors = GetMonitors();
 }
 
 ScreenCapture::~ScreenCapture() {
@@ -49,6 +74,7 @@ ScreenCapture::~ScreenCapture() {
 void ScreenCapture::Start() {
     if (_running) return;
     _running = true;
+    SendMonitorList();
     _thread = std::thread(&ScreenCapture::CaptureLoop, this);
 }
 
@@ -63,18 +89,56 @@ bool ScreenCapture::IsRunning() const {
     return _running;
 }
 
-std::vector<BYTE> ScreenCapture::CaptureScreen(int quality) {
+void ScreenCapture::SetMonitor(int index) {
+    std::lock_guard<std::mutex> lock(_monitorMutex);
+    if (index >= 0 && index < (int)_monitors.size()) {
+        _monitorIndex = index;
+    }
+}
+
+std::vector<MonitorInfo> ScreenCapture::GetMonitors() {
+    std::vector<MonitorInfo> monitors;
+    EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitors));
+    return monitors;
+}
+
+void ScreenCapture::SendMonitorList() {
+    std::lock_guard<std::mutex> lock(_monitorMutex);
+    _monitors = GetMonitors();
+
+    std::string json = "{\"connectionId\":\"" + _connectionId + "\",\"monitors\":[";
+    for (size_t i = 0; i < _monitors.size(); i++) {
+        if (i > 0) json += ",";
+        json += _monitors[i].toJson();
+    }
+    json += "]}";
+
+    std::string url = Constants::API_BASE + "/connections/" + _connectionId + "/monitors";
+    HttpClient::Post(url, json);
+}
+
+std::vector<BYTE> ScreenCapture::CaptureScreen(int quality, const MonitorInfo* monitor) {
     std::vector<BYTE> result;
 
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    int x, y, width, height;
+    if (monitor) {
+        x = monitor->x;
+        y = monitor->y;
+        width = monitor->width;
+        height = monitor->height;
+    } else {
+        x = 0;
+        y = 0;
+        width = GetSystemMetrics(SM_CXSCREEN);
+        height = GetSystemMetrics(SM_CYSCREEN);
+    }
 
     HDC hScreenDC = GetDC(nullptr);
     HDC hMemDC = CreateCompatibleDC(hScreenDC);
-    HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, screenWidth, screenHeight);
+    HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, width, height);
     SelectObject(hMemDC, hBitmap);
 
-    BitBlt(hMemDC, 0, 0, screenWidth, screenHeight, hScreenDC, 0, 0, SRCCOPY);
+    BitBlt(hMemDC, 0, 0, width, height, hScreenDC, x, y, SRCCOPY);
 
     Gdiplus::Bitmap bitmap(hBitmap, nullptr);
 
@@ -137,18 +201,51 @@ std::string ScreenCapture::ToBase64(const std::vector<BYTE>& data) {
     return encoded;
 }
 
+void ScreenCapture::CheckCommands() {
+    try {
+        std::string url = Constants::API_BASE + "/connections/" + _connectionId + "/command";
+        auto response = HttpClient::Get(url);
+        if (response.statusCode == 200 && !response.body.empty()) {
+            auto json = JsonParser::Parse(response.body);
+            if (json.count("type") && json["type"] == "switchMonitor" && json.count("monitorIndex")) {
+                int idx = std::stoi(json["monitorIndex"]);
+                SetMonitor(idx);
+            }
+        }
+    } catch (...) {}
+}
+
 void ScreenCapture::CaptureLoop() {
+    int commandCheckCounter = 0;
+
     while (_running) {
         try {
-            auto imageData = CaptureScreen(40);
+            const MonitorInfo* currentMonitor = nullptr;
+            {
+                std::lock_guard<std::mutex> lock(_monitorMutex);
+                int idx = _monitorIndex.load();
+                if (idx >= 0 && idx < (int)_monitors.size()) {
+                    currentMonitor = &_monitors[idx];
+                }
+            }
+
+            auto imageData = CaptureScreen(40, currentMonitor);
             if (!imageData.empty()) {
                 std::string base64 = ToBase64(imageData);
-                std::string json = "{\"connectionId\":\"" + _connectionId + "\",\"frame\":\"" + base64 + "\"}";
+                std::string json = "{\"connectionId\":\"" + _connectionId +
+                    "\",\"monitorIndex\":" + std::to_string(_monitorIndex.load()) +
+                    ",\"frame\":\"" + base64 + "\"}";
                 std::string url = Constants::API_BASE + "/connections/" + _connectionId + "/screen";
                 HttpClient::Post(url, json);
             }
         }
         catch (...) {}
+
+        commandCheckCounter++;
+        if (commandCheckCounter >= 5) {
+            CheckCommands();
+            commandCheckCounter = 0;
+        }
 
         Sleep(_intervalMs);
     }
