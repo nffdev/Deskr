@@ -5,9 +5,10 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import BottomNav from "@/components/nav/BottomNav";
 import {
   Radio, Monitor, Maximize2, Minimize2, MousePointer2,
-  Keyboard, RotateCcw, Power, Wifi, WifiOff, Circle,
-  ChevronDown, Volume2, VolumeX, Camera, Square
+  Keyboard, RotateCcw, Wifi, Camera
 } from 'lucide-react';
+import io from 'socket.io-client';
+import config from '@/config.json';
 
 export default function Remote() {
   const { user } = useAuth();
@@ -16,10 +17,13 @@ export default function Remote() {
   const [fullscreen, setFullscreen] = useState(false);
   const [showToolbar, setShowToolbar] = useState(true);
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const [cursorPos, setCursorPos] = useState({ x: 50, y: 50 });
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [showDeviceList, setShowDeviceList] = useState(false);
+  const [screenFrame, setScreenFrame] = useState(null);
+  const [latency, setLatency] = useState(null);
   const screenRef = useRef(null);
+  const socketRef = useRef(null);
+  const lastFrameTime = useRef(null);
 
   const devices = [
     { id: 1, name: 'Desktop-PC-01', os: 'Windows 11', status: 'online', ip: '192.168.1.42' },
@@ -27,10 +31,31 @@ export default function Remote() {
     { id: 3, name: 'Server-Prod', os: 'Windows Server', status: 'offline', ip: '10.0.0.12' },
   ];
 
+  useEffect(() => {
+    const socket = io(config.BASE_API.replace('/api', ''), {
+      transports: ['websocket', 'polling']
+    });
+    socketRef.current = socket;
+
+    socket.on('screenFrame', (data) => {
+      if (selectedDevice && data.connectionId === selectedDevice._id) {
+        const now = Date.now();
+        if (lastFrameTime.current) {
+          setLatency(now - lastFrameTime.current);
+        }
+        lastFrameTime.current = now;
+        setScreenFrame(`data:image/jpeg;base64,${data.frame}`);
+      }
+    });
+
+    return () => socket.disconnect();
+  }, [selectedDevice]);
+
   const manageConnect = (device) => {
     setSelectedDevice(device);
     setShowDeviceList(false);
     setConnecting(true);
+    setScreenFrame(null);
     setTimeout(() => {
       setConnecting(false);
       setConnected(true);
@@ -40,18 +65,10 @@ export default function Remote() {
   const manageDisconnect = () => {
     setConnected(false);
     setSelectedDevice(null);
+    setScreenFrame(null);
+    setLatency(null);
   };
 
-  const manageScreenClick = (e) => {
-    if (!screenRef.current || !connected) return;
-    const rect = screenRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setCursorPos({ x: Math.min(100, Math.max(0, x)), y: Math.min(100, Math.max(0, y)) });
-  };
-
-  const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <div className="relative min-h-screen bg-gray-950 pb-16 sm:pb-20">
@@ -163,8 +180,8 @@ export default function Remote() {
                 <ToolbarBtn icon={RotateCcw} label="Refresh" />
                 <div className="flex-1" />
                 <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-800/50 rounded-lg">
-                  <div className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                  <span className="text-[10px] sm:text-xs text-gray-400 whitespace-nowrap">24ms</span>
+                  <div className={`w-1.5 h-1.5 rounded-full ${screenFrame ? 'bg-green-400' : 'bg-yellow-400'}`} />
+                  <span className="text-[10px] sm:text-xs text-gray-400 whitespace-nowrap">{latency ? `${latency}ms` : '—'}</span>
                 </div>
                 <div className="px-2 sm:px-3 py-1.5 bg-gray-800/50 rounded-lg">
                   <span className="text-[10px] sm:text-xs text-gray-400">1920×1080</span>
@@ -174,77 +191,28 @@ export default function Remote() {
 
             <div
               ref={screenRef}
-              onClick={manageScreenClick}
-              className={`relative bg-[#0078d4] rounded-xl overflow-hidden cursor-crosshair select-none ${
+              className={`relative bg-black rounded-xl overflow-hidden select-none ${
                 fullscreen ? 'fixed inset-0 z-50 rounded-none' : 'aspect-video'
               }`}
-              style={{ backgroundImage: 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)' }}
             >
-              <div className="absolute inset-0">
-                <div className="absolute top-4 left-4 space-y-4">
-                  <DesktopIcon label="This PC" />
-                  <DesktopIcon label="Recycle Bin" />
-                  <DesktopIcon label="Documents" />
-                  <DesktopIcon label="Chrome" />
-                </div>
-
-                <div className="absolute top-[10%] left-[15%] w-[60%] h-[55%] bg-[#202020] rounded-t-lg shadow-2xl shadow-black/50 overflow-hidden">
-                  <div className="h-8 bg-[#2d2d2d] flex items-center justify-between px-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-[#0078d4] rounded-sm" />
-                      <span className="text-[10px] text-gray-300 font-medium">File Explorer — Documents</span>
-                    </div>
-                    <div className="flex items-center gap-0.5">
-                      <div className="w-8 h-6 flex items-center justify-center hover:bg-white/10 rounded-sm">
-                        <div className="w-2.5 h-[1px] bg-gray-400" />
-                      </div>
-                      <div className="w-8 h-6 flex items-center justify-center hover:bg-white/10 rounded-sm">
-                        <Square className="w-2.5 h-2.5 text-gray-400" />
-                      </div>
-                      <div className="w-8 h-6 flex items-center justify-center hover:bg-red-500 rounded-sm">
-                        <span className="text-gray-400 text-xs">×</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-3 space-y-1">
-                    <FileRow name="Project_Report.docx" size="2.4 MB" date="Mar 28, 2026" />
-                    <FileRow name="Budget_2026.xlsx" size="1.1 MB" date="Mar 25, 2026" />
-                    <FileRow name="Presentation.pptx" size="8.7 MB" date="Mar 22, 2026" />
-                    <FileRow name="meeting_notes.txt" size="12 KB" date="Mar 20, 2026" />
-                    <FileRow name="client_backup.zip" size="156 MB" date="Mar 15, 2026" />
-                    <FileRow name="screenshot_01.png" size="3.2 MB" date="Mar 12, 2026" />
+              {screenFrame ? (
+                <img
+                  src={screenFrame}
+                  alt="Remote screen"
+                  className="absolute inset-0 w-full h-full object-contain"
+                  draggable={false}
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <Monitor className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600" />
+                  <p className="text-xs sm:text-sm text-gray-500">Waiting for screen data...</p>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-purple-400/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 bg-purple-400/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 bg-purple-400/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
-
-                <div className="absolute bottom-0 left-0 right-0 h-10 bg-[#1c1c1c]/95 backdrop-blur-sm flex items-center px-2 justify-between">
-                  <div className="flex items-center gap-1">
-                    <div className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded">
-                      <svg className="w-4 h-4" viewBox="0 0 16 16" fill="white"><path d="M0 0h7.5v7.5H0zM8.5 0H16v7.5H8.5zM0 8.5h7.5V16H0zM8.5 8.5H16V16H8.5z"/></svg>
-                    </div>
-                    <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded border-b-2 border-[#0078d4]">
-                      <div className="w-3.5 h-3.5 bg-yellow-500/80 rounded-sm" />
-                    </div>
-                    <div className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded">
-                      <Circle className="w-3.5 h-3.5 text-[#0078d4]" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 px-2">
-                    <Wifi className="w-3 h-3 text-gray-400" />
-                    <Volume2 className="w-3 h-3 text-gray-400" />
-                    <span className="text-[9px] text-gray-400">{currentTime}</span>
-                    <span className="text-[9px] text-gray-400">{currentDate}</span>
-                  </div>
-                </div>
-
-                <div
-                  className="absolute w-4 h-4 transition-all duration-100 pointer-events-none z-10"
-                  style={{ left: `${cursorPos.x}%`, top: `${cursorPos.y}%`, transform: 'translate(-2px, -2px)' }}
-                >
-                  <svg viewBox="0 0 16 16" fill="white" stroke="black" strokeWidth="1">
-                    <path d="M0 0 L0 14 L4 10 L8 16 L10 15 L6 9 L12 9 Z" />
-                  </svg>
-                </div>
-              </div>
+              )}
 
               {fullscreen && (
                 <button
@@ -322,24 +290,3 @@ function ToolbarBtn({ icon: Icon, label, onClick, active }) {
   );
 }
 
-function DesktopIcon({ label }) {
-  return (
-    <div className="flex flex-col items-center gap-1 w-14 cursor-default">
-      <div className="w-8 h-8 bg-white/10 rounded flex items-center justify-center">
-        <Monitor className="w-4 h-4 text-white/70" />
-      </div>
-      <span className="text-[8px] sm:text-[9px] text-white text-center leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{label}</span>
-    </div>
-  );
-}
-
-function FileRow({ name, size, date }) {
-  return (
-    <div className="flex items-center gap-3 px-2 py-1 rounded hover:bg-white/5 text-[9px] sm:text-[10px]">
-      <div className="w-4 h-4 bg-blue-500/30 rounded-sm shrink-0" />
-      <span className="text-gray-300 flex-1 truncate">{name}</span>
-      <span className="text-gray-500 shrink-0">{size}</span>
-      <span className="text-gray-500 shrink-0 hidden sm:block">{date}</span>
-    </div>
-  );
-}
