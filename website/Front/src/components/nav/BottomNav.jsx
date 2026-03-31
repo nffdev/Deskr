@@ -14,13 +14,13 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-2 sm:py-3 px-2 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-gray-900/80 backdrop-blur-xl border-t border-white/[0.06] flex justify-around py-2 sm:py-3 px-2 z-50">
       {tabs.map(({ path, icon: Icon, label }) => {
         const isActive = location.pathname === path;
         return (
           <button
             key={path}
-            className={`flex flex-col items-center min-w-0 flex-1 py-1 ${isActive ? 'text-blue-500' : 'text-gray-400'}`}
+            className={`flex flex-col items-center min-w-0 flex-1 py-1 transition-colors ${isActive ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'}`}
             onClick={() => navigate(path)}
           >
             <Icon className="w-5 h-5 sm:w-6 sm:h-6" />

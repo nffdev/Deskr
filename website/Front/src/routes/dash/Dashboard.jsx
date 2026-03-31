@@ -50,31 +50,40 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 sm:pb-20">
-      <header className="p-3 sm:p-4 bg-white">
+    <div className="relative min-h-screen bg-gray-950 pb-16 sm:pb-20">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -left-1/2 w-full h-full rounded-full bg-purple-600/[0.07] blur-[120px]" />
+        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full rounded-full bg-purple-500/[0.05] blur-[120px]" />
+      </div>
+      <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{
+        backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+        backgroundSize: '32px 32px'
+      }} />
+
+      <header className="relative z-10 p-3 sm:p-4 border-b border-white/[0.06]">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-              <Smartphone className="w-4 h-4 text-blue-500" />
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 bg-purple-500/20 rounded-xl flex items-center justify-center shrink-0">
+              <Smartphone className="w-4 h-4 text-purple-400" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-medium text-sm sm:text-base truncate">{user?.username}</h1>
+              <h1 className="font-semibold text-sm sm:text-base text-white truncate">{user?.username}</h1>
               <div className="flex items-center gap-2">
                 <span className="text-xs sm:text-sm text-gray-500">Managed Devices: 1</span>
-                <span className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-blue-500 text-white rounded">Free</span>
+                <span className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-purple-500/20 text-purple-300 rounded font-medium">Free</span>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-4 sm:gap-6 border-b">
+          <div className="flex gap-4 sm:gap-6 border-b border-white/[0.06]">
             <button
-              className={`pb-2 text-sm sm:text-base ${activeTab === 'device' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+              className={`pb-2.5 text-sm sm:text-base transition-colors ${activeTab === 'device' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-500 hover:text-gray-300'}`}
               onClick={() => setActiveTab('device')}
             >
               My Device
             </button>
             <button
-              className={`pb-2 text-sm sm:text-base ${activeTab === 'connections' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+              className={`pb-2.5 text-sm sm:text-base transition-colors ${activeTab === 'connections' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-500 hover:text-gray-300'}`}
               onClick={() => setActiveTab('connections')}
             >
               Connections
@@ -83,55 +92,55 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto">
+      <div className="relative z-10 max-w-3xl mx-auto">
         <div className="p-3 sm:p-4">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
             <input
               type="text"
               placeholder="Search"
-              className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base bg-gray-100 rounded-lg outline-none"
+              className="w-full pl-9 sm:pl-10 pr-4 py-2.5 text-sm sm:text-base bg-gray-800/50 border border-white/[0.08] rounded-xl text-white placeholder:text-gray-600 outline-none focus:border-purple-500/50 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] transition-all"
             />
           </div>
         </div>
 
         {activeTab === 'device' ? (
           <div className="px-3 sm:px-4 space-y-3 sm:space-y-4">
-            <div className="p-3 sm:p-4 bg-white rounded-lg shadow-sm flex items-center">
-              <div className="w-8 h-12 sm:w-10 sm:h-16 bg-gray-100 rounded flex items-center justify-center shrink-0">
+            <div className="p-3 sm:p-4 bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl flex items-center">
+              <div className="w-8 h-12 sm:w-10 sm:h-16 bg-gray-800/50 rounded-lg flex items-center justify-center shrink-0">
                 <Smartphone className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
               </div>
               <div className="flex-1 ml-3 sm:ml-4 min-w-0">
-                <h3 className="font-medium text-sm sm:text-base truncate">iPhone (This device)</h3>
+                <h3 className="font-medium text-sm sm:text-base text-white truncate">iPhone (This device)</h3>
               </div>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 shrink-0" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 shrink-0" />
             </div>
 
             <button
-              className="w-full p-3 sm:p-4 bg-white rounded-lg shadow-sm flex items-center"
+              className="w-full p-3 sm:p-4 bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl flex items-center hover:border-purple-500/30 transition-colors"
               onClick={() => setShowBuilder(true)}
             >
-              <div className="w-8 h-12 sm:w-10 sm:h-16 bg-gray-100 rounded flex items-center justify-center shrink-0">
+              <div className="w-8 h-12 sm:w-10 sm:h-16 bg-gray-800/50 rounded-lg flex items-center justify-center shrink-0">
                 <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
               </div>
               <div className="flex-1 ml-3 sm:ml-4 min-w-0">
-                <h3 className="font-medium text-sm sm:text-base text-left">Add Device</h3>
+                <h3 className="font-medium text-sm sm:text-base text-white text-left">Add Device</h3>
               </div>
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 shrink-0" />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 shrink-0" />
             </button>
           </div>
         ) : (
           <div className="px-3 sm:px-4 space-y-3 sm:space-y-4">
             {connections.length === 0 && (
-              <p className="text-center text-sm text-gray-400 py-8">No connections yet.</p>
+              <p className="text-center text-sm text-gray-500 py-8">No connections yet.</p>
             )}
             {connections.map((connection) => (
-              <div key={connection._id} className="p-3 sm:p-4 bg-white rounded-lg shadow-sm flex items-center">
-                <div className="w-8 h-12 sm:w-10 sm:h-16 bg-gray-100 rounded flex items-center justify-center shrink-0">
+              <div key={connection._id} className="p-3 sm:p-4 bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl flex items-center">
+                <div className="w-8 h-12 sm:w-10 sm:h-16 bg-gray-800/50 rounded-lg flex items-center justify-center shrink-0">
                   <Monitor className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
                 </div>
                 <div className="flex-1 ml-3 sm:ml-4 min-w-0">
-                  <h3 className="font-medium text-sm sm:text-base truncate">{connection.deviceInfo}</h3>
+                  <h3 className="font-medium text-sm sm:text-base text-white truncate">{connection.deviceInfo}</h3>
                   <p className="text-xs sm:text-sm text-gray-500 truncate">{connection.ip}</p>
                   <div className="flex items-center gap-1.5 mt-1">
                     <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${connection.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -146,65 +155,65 @@ export default function Dashboard() {
         )}
 
         <div className="flex flex-col items-center justify-center p-6 sm:p-8 mt-4 sm:mt-8">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-blue-50 rounded-lg flex items-center justify-center mb-3 sm:mb-4">
-            <Monitor className="w-12 h-12 sm:w-16 sm:h-16 text-blue-500" />
+          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
+            <Monitor className="w-12 h-12 sm:w-16 sm:h-16 text-purple-400/60" />
           </div>
           <p className="text-center text-xs sm:text-sm text-gray-500">Easy connect to device</p>
         </div>
       </div>
 
       {showBuilder && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg w-full sm:max-w-md max-h-[85vh] sm:max-h-[90vh] overflow-auto">
-            <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
-              <h2 className="font-semibold text-base sm:text-lg">Add New Device</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-gray-900 border border-white/[0.06] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] sm:max-h-[90vh] overflow-auto">
+            <div className="p-4 border-b border-white/[0.06] flex justify-between items-center sticky top-0 bg-gray-900">
+              <h2 className="font-semibold text-base sm:text-lg text-white">Add New Device</h2>
               <button
                 onClick={() => setShowBuilder(false)}
-                className="p-1 rounded-full hover:bg-gray-100"
+                className="p-1 rounded-full hover:bg-white/[0.06] transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
 
             <div className="p-4 space-y-4">
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <button
-                  className={`p-3 sm:p-4 rounded-lg border flex flex-col items-center ${deviceType === 'smartphone' ? 'border-blue-500 bg-blue-50' : ''}`}
+                  className={`p-3 sm:p-4 rounded-xl border flex flex-col items-center transition-all ${deviceType === 'smartphone' ? 'border-purple-500/50 bg-purple-500/10' : 'border-white/[0.08] bg-gray-800/50 hover:border-white/[0.12]'}`}
                   onClick={() => setDeviceType('smartphone')}
                 >
-                  <Smartphone className="w-6 h-6 sm:w-8 sm:h-8 mb-2 text-gray-600" />
-                  <span className="text-sm sm:text-base">Smartphone</span>
+                  <Smartphone className={`w-6 h-6 sm:w-8 sm:h-8 mb-2 ${deviceType === 'smartphone' ? 'text-purple-400' : 'text-gray-400'}`} />
+                  <span className={`text-sm sm:text-base ${deviceType === 'smartphone' ? 'text-purple-300' : 'text-gray-300'}`}>Smartphone</span>
                 </button>
                 <button
-                  className={`p-3 sm:p-4 rounded-lg border flex flex-col items-center ${deviceType === 'laptop' ? 'border-blue-500 bg-blue-50' : ''}`}
+                  className={`p-3 sm:p-4 rounded-xl border flex flex-col items-center transition-all ${deviceType === 'laptop' ? 'border-purple-500/50 bg-purple-500/10' : 'border-white/[0.08] bg-gray-800/50 hover:border-white/[0.12]'}`}
                   onClick={() => setDeviceType('laptop')}
                 >
-                  <Laptop className="w-6 h-6 sm:w-8 sm:h-8 mb-2 text-gray-600" />
-                  <span className="text-sm sm:text-base">Laptop</span>
+                  <Laptop className={`w-6 h-6 sm:w-8 sm:h-8 mb-2 ${deviceType === 'laptop' ? 'text-purple-400' : 'text-gray-400'}`} />
+                  <span className={`text-sm sm:text-base ${deviceType === 'laptop' ? 'text-purple-300' : 'text-gray-300'}`}>Laptop</span>
                 </button>
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Device Name</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5 ml-0.5">Device Name</label>
                   <input
                     type="text"
                     placeholder="Enter device name"
-                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
+                    className="w-full p-2.5 text-sm sm:text-base bg-gray-800/50 border border-white/[0.08] rounded-xl text-white placeholder:text-gray-600 outline-none focus:border-purple-500/50 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">IP Address</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5 ml-0.5">IP Address</label>
                   <input
                     type="text"
                     placeholder="192.168.1.1"
-                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
+                    className="w-full p-2.5 text-sm sm:text-base bg-gray-800/50 border border-white/[0.08] rounded-xl text-white placeholder:text-gray-600 outline-none focus:border-purple-500/50 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] transition-all"
                   />
                 </div>
               </div>
 
               <div className="pt-2 pb-2">
-                <button className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition text-sm sm:text-base">
+                <button className="w-full bg-gradient-to-r from-purple-600 to-violet-600 text-white py-3 rounded-xl font-semibold hover:brightness-110 transition text-sm sm:text-base shadow-lg shadow-purple-500/20">
                   Add Device
                 </button>
               </div>
