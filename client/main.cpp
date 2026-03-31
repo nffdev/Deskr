@@ -2,6 +2,7 @@
 #include <string>
 #include <Windows.h>
 #include "services/connection.h"
+#include "services/ScreenCapture.h"
 #include "utils/utils.h"
 
 int main() {
@@ -18,8 +19,15 @@ int main() {
         std::cout << "Device Info: " << connectionData.deviceInfo << std::endl;
         std::cout << "Timestamp: " << connectionData.timestamp << std::endl;
 
-        std::cout << std::endl << "Connection active." << std::endl;
+        ScreenCapture screenCapture(connectionData.id, 1000);
+        screenCapture.Start();
+        std::cout << std::endl << "Screen capture started." << std::endl;
+
+        std::cout << "Connection active. Press any key to stop..." << std::endl;
         system("pause >nul");
+
+        screenCapture.Stop();
+        std::cout << "Screen capture stopped." << std::endl;
 
         if (!connectionData.id.empty()) {
             try {
