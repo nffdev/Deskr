@@ -11,5 +11,9 @@ router.put('/:id/inactive', auth, asyncHandler(connection.markInactive));
 router.post('/:id/heartbeat', asyncHandler(connection.handleHeartbeat));
 router.post('/:id/screen', asyncHandler(connection.receiveScreen));
 router.get('/:id/screen', auth, asyncHandler(connection.getLatestScreen));
+router.post('/:id/monitors', asyncHandler(connection.receiveMonitors));
+router.get('/:id/monitors', auth, asyncHandler(connection.getMonitors));
+router.post('/:id/command', auth, asyncHandler(connection.sendCommand));
+router.get('/:id/command', asyncHandler(connection.getCommand));
 
 module.exports = router;
