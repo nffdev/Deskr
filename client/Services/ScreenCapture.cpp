@@ -53,9 +53,7 @@ static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC, LPRECT, LPARAM dwDa
     info.height = mi.rcMonitor.bottom - mi.rcMonitor.top;
     info.isPrimary = (mi.dwFlags & MONITORINFOF_PRIMARY) != 0;
 
-    char name[33];
-    WideCharToMultiByte(CP_UTF8, 0, mi.szDevice, -1, name, sizeof(name), nullptr, nullptr);
-    info.name = std::string(name);
+    info.name = std::string(mi.szDevice);
 
     monitors->push_back(info);
     return TRUE;
