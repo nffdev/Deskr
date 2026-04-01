@@ -259,7 +259,7 @@ export default function Remote() {
                 <ToolbarBtn icon={Keyboard} label="Keyboard" onClick={() => setShowKeyboard(!showKeyboard)} active={showKeyboard} />
                 <ToolbarBtn icon={Camera} label="Screenshot" />
                 <ToolbarBtn icon={RotateCcw} label="Refresh" />
-                {monitors.length > 1 && (
+                {monitors.length > 0 && (
                   <div className="relative">
                     <button
                       onClick={() => setShowMonitorPicker(!showMonitorPicker)}
