@@ -101,6 +101,15 @@ export default function Remote() {
     }
   };
 
+  useEffect(() => {
+    if (!connected || !selectedDevice) return;
+    fetchMonitors(selectedDevice._id);
+    const interval = setInterval(() => {
+      fetchMonitors(selectedDevice._id);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [connected, selectedDevice]);
+
   const switchMonitor = async (index) => {
     setActiveMonitor(index);
     setShowMonitorPicker(false);
