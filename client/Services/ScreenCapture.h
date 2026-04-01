@@ -12,9 +12,19 @@ struct MonitorInfo {
     int x, y, width, height;
     bool isPrimary;
 
+    static std::string escapeJson(const std::string& s) {
+        std::string out;
+        for (char c : s) {
+            if (c == '\\') out += "\\\\";
+            else if (c == '"') out += "\\\"";
+            else out += c;
+        }
+        return out;
+    }
+
     std::string toJson() const {
         return "{\"index\":" + std::to_string(index) +
-            ",\"name\":\"" + name + "\"" +
+            ",\"name\":\"" + escapeJson(name) + "\"" +
             ",\"x\":" + std::to_string(x) +
             ",\"y\":" + std::to_string(y) +
             ",\"width\":" + std::to_string(width) +
