@@ -259,42 +259,60 @@ export default function Remote() {
                 <ToolbarBtn icon={Keyboard} label="Keyboard" onClick={() => setShowKeyboard(!showKeyboard)} active={showKeyboard} />
                 <ToolbarBtn icon={Camera} label="Screenshot" />
                 <ToolbarBtn icon={RotateCcw} label="Refresh" />
-                {monitors.length > 0 && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowMonitorPicker(!showMonitorPicker)}
-                      className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-800/50 rounded-lg text-gray-400 hover:text-gray-300 transition-colors"
-                    >
-                      <MonitorSmartphone className="w-3.5 h-3.5" />
-                      <span className="text-[10px] sm:text-xs whitespace-nowrap">Screen {activeMonitor + 1}</span>
-                      <ChevronDown className={`w-3 h-3 transition-transform ${showMonitorPicker ? 'rotate-180' : ''}`} />
-                    </button>
-                    {showMonitorPicker && (
-                      <div className="absolute top-full mt-1 left-0 bg-gray-900 border border-white/[0.08] rounded-lg shadow-xl z-30 min-w-[180px] py-1">
-                        {monitors.map((m) => (
-                          <button
-                            key={m.index}
-                            onClick={() => switchMonitor(m.index)}
-                            className={`w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-800/60 transition-colors ${
-                              activeMonitor === m.index ? 'text-purple-400' : 'text-gray-300'
-                            }`}
-                          >
-                            <Monitor className="w-3.5 h-3.5 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-xs font-medium truncate">
-                                Screen {m.index + 1} {m.isPrimary ? '(Primary)' : ''}
-                              </p>
-                              <p className="text-[10px] text-gray-500">{m.width}×{m.height}</p>
-                            </div>
-                            {activeMonitor === m.index && (
-                              <div className="w-1.5 h-1.5 bg-purple-400 rounded-full ml-auto shrink-0" />
-                            )}
-                          </button>
-                        ))}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMonitorPicker(!showMonitorPicker)}
+                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-800/50 rounded-lg text-gray-400 hover:text-gray-300 transition-colors"
+                  >
+                    <MonitorSmartphone className="w-3.5 h-3.5" />
+                    <span className="text-[10px] sm:text-xs whitespace-nowrap">Screen {activeMonitor + 1}</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${showMonitorPicker ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showMonitorPicker && (
+                    <div className="absolute top-full mt-1 left-0 bg-gray-900 border border-white/[0.08] rounded-lg shadow-xl z-30 min-w-[200px] py-1">
+                      {monitors.length > 0 ? monitors.map((m) => (
+                        <button
+                          key={m.index}
+                          onClick={() => switchMonitor(m.index)}
+                          className={`w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-800/60 transition-colors ${
+                            activeMonitor === m.index ? 'text-purple-400' : 'text-gray-300'
+                          }`}
+                        >
+                          <Monitor className="w-3.5 h-3.5 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate">
+                              Screen {m.index + 1} {m.isPrimary ? '(Primary)' : ''}
+                            </p>
+                            <p className="text-[10px] text-gray-500">{m.width}x{m.height}</p>
+                          </div>
+                          {activeMonitor === m.index && (
+                            <div className="w-1.5 h-1.5 bg-purple-400 rounded-full ml-auto shrink-0" />
+                          )}
+                        </button>
+                      )) : (
+                        <p className="px-3 py-2 text-xs text-gray-500">No monitors detected</p>
+                      )}
+                      <div className="border-t border-white/[0.06] mt-1 pt-1 px-2 pb-1">
+                        <p className="text-[10px] text-gray-500 mb-1.5 px-1">Switch manually</p>
+                        <div className="flex gap-1">
+                          {[0, 1, 2].map((i) => (
+                            <button
+                              key={i}
+                              onClick={() => switchMonitor(i)}
+                              className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                                activeMonitor === i
+                                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                  : 'bg-gray-800/60 text-gray-400 border border-white/[0.06] hover:border-white/[0.12]'
+                              }`}
+                            >
+                              {i + 1}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1" />
                 <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-800/50 rounded-lg">
                   <div className={`w-1.5 h-1.5 rounded-full ${screenFrame ? 'bg-green-400' : 'bg-yellow-400'}`} />
