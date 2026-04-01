@@ -250,7 +250,7 @@ export default function Remote() {
         ) : (
           <div className="space-y-3">
             {showToolbar && !fullscreen && (
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl p-2 flex items-center gap-1 sm:gap-2 overflow-x-auto">
+              <div className="relative z-30 bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl p-2 flex items-center gap-1 sm:gap-2 overflow-visible flex-wrap">
                 <ToolbarBtn icon={Maximize2} label="Fullscreen" onClick={() => {
                   setFullscreen(true);
                   screenRef.current?.requestFullscreen?.();
@@ -269,7 +269,7 @@ export default function Remote() {
                     <ChevronDown className={`w-3 h-3 transition-transform ${showMonitorPicker ? 'rotate-180' : ''}`} />
                   </button>
                   {showMonitorPicker && (
-                    <div className="absolute top-full mt-1 left-0 bg-gray-900 border border-white/[0.08] rounded-lg shadow-xl z-30 min-w-[200px] py-1">
+                    <div className="absolute top-full mt-1 left-0 bg-gray-900 border border-white/[0.08] rounded-lg shadow-xl z-50 min-w-[200px] py-1">
                       {monitors.length > 0 ? monitors.map((m) => (
                         <button
                           key={m.index}
@@ -292,24 +292,6 @@ export default function Remote() {
                       )) : (
                         <p className="px-3 py-2 text-xs text-gray-500">No monitors detected</p>
                       )}
-                      <div className="border-t border-white/[0.06] mt-1 pt-1 px-2 pb-1">
-                        <p className="text-[10px] text-gray-500 mb-1.5 px-1">Switch manually</p>
-                        <div className="flex gap-1">
-                          {[0, 1, 2].map((i) => (
-                            <button
-                              key={i}
-                              onClick={() => switchMonitor(i)}
-                              className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                                activeMonitor === i
-                                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                                  : 'bg-gray-800/60 text-gray-400 border border-white/[0.06] hover:border-white/[0.12]'
-                              }`}
-                            >
-                              {i + 1}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
