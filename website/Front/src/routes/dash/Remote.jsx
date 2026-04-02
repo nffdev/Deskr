@@ -61,6 +61,9 @@ export default function Remote() {
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
 
+  const selectedDeviceRef = useRef(null);
+  useEffect(() => { selectedDeviceRef.current = selectedDevice; }, [selectedDevice]);
+
   useEffect(() => {
     const socket = io(config.BASE_API.replace('/api', ''), {
       transports: ['websocket', 'polling']
@@ -68,7 +71,8 @@ export default function Remote() {
     socketRef.current = socket;
 
     socket.on('screenFrame', (data) => {
-      if (selectedDevice && data.connectionId === selectedDevice._id) {
+      const dev = selectedDeviceRef.current;
+      if (dev && data.connectionId === dev._id) {
         const now = Date.now();
         if (lastFrameTime.current) {
           setLatency(now - lastFrameTime.current);
@@ -79,7 +83,8 @@ export default function Remote() {
     });
 
     socket.on('monitors', (data) => {
-      if (selectedDevice && data.connectionId === selectedDevice._id) {
+      const dev = selectedDeviceRef.current;
+      if (dev && data.connectionId === dev._id) {
         setMonitors(data.monitors || []);
       }
     });
@@ -87,7 +92,8 @@ export default function Remote() {
     socket.on('newConnection', () => fetchDevices());
     socket.on('connectionUpdated', (data) => {
       fetchDevices();
-      if (selectedDevice && data._id === selectedDevice._id && !data.isActive) {
+      const dev = selectedDeviceRef.current;
+      if (dev && data._id === dev._id && !data.isActive) {
         setConnected(false);
         setConnecting(false);
         setSelectedDevice(null);
@@ -100,7 +106,7 @@ export default function Remote() {
     });
 
     return () => socket.disconnect();
-  }, [selectedDevice]);
+  }, []);
 
   const fetchMonitors = async (deviceId) => {
     try {
