@@ -214,8 +214,6 @@ void ScreenCapture::CheckCommands() {
 }
 
 void ScreenCapture::CaptureLoop() {
-    int commandCheckCounter = 0;
-
     while (_running) {
         try {
             const MonitorInfo* currentMonitor = nullptr;
@@ -239,12 +237,7 @@ void ScreenCapture::CaptureLoop() {
         }
         catch (...) {}
 
-        commandCheckCounter++;
-        if (commandCheckCounter >= 5) {
-            CheckCommands();
-            commandCheckCounter = 0;
-        }
-
+        CheckCommands();
         Sleep(_intervalMs);
     }
 }
