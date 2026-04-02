@@ -261,13 +261,6 @@ export default function Settings() {
                   </div>
                   <Switch defaultChecked className="ml-3" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-white font-medium">Security alerts</p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">Notify on suspicious login attempts</p>
-                  </div>
-                  <Switch defaultChecked className="ml-3" />
-                </div>
               </div>
             )}
 
