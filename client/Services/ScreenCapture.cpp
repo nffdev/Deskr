@@ -138,6 +138,17 @@ std::vector<BYTE> ScreenCapture::CaptureScreen(int quality, const MonitorInfo* m
 
     BitBlt(hMemDC, 0, 0, width, height, hScreenDC, x, y, SRCCOPY);
 
+    CURSORINFO ci = {};
+    ci.cbSize = sizeof(CURSORINFO);
+    if (GetCursorInfo(&ci) && (ci.flags & CURSOR_SHOWING)) {
+        ICONINFO ii;
+        if (GetIconInfo(ci.hCursor, &ii)) {
+            DrawIconEx(hMemDC, ci.ptScreenPos.x - x - ii.xHotspot, ci.ptScreenPos.y - y - ii.yHotspot, ci.hCursor, 0, 0, 0, nullptr, DI_NORMAL);
+            if (ii.hbmMask) DeleteObject(ii.hbmMask);
+            if (ii.hbmColor) DeleteObject(ii.hbmColor);
+        }
+    }
+
     Gdiplus::Bitmap bitmap(hBitmap, nullptr);
 
     CLSID jpegClsid;
