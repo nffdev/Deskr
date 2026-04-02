@@ -25,7 +25,7 @@ const connectionSchema = new mongoose.Schema({
 
 connectionSchema.methods.isConnectionActive = function() {
     if (!this.isActive) return false;
-    const TIMEOUT = 10000; // 10 seconds
+    const TIMEOUT = 10000;
     const now = new Date();
     const timeSinceLastHeartbeat = now - this.lastHeartbeat;
     return timeSinceLastHeartbeat < TIMEOUT;
