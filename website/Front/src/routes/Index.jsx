@@ -86,12 +86,12 @@ export default function Home() {
                     <div className="bg-gray-900/40 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-1 shadow-2xl shadow-purple-500/5">
                         <div className="bg-gray-950 rounded-xl overflow-hidden aspect-video flex items-center justify-center relative">
                             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent" />
+                            <div className="absolute top-3 right-3 flex gap-1.5">
+                                <div className="w-3 h-3 rounded-full bg-red-500/60" />
+                                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+                                <div className="w-3 h-3 rounded-full bg-green-500/60" />
+                            </div>
                             <div className="relative flex flex-col items-center gap-4">
-                                <div className="flex gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-red-500/60" />
-                                    <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-                                    <div className="w-3 h-3 rounded-full bg-green-500/60" />
-                                </div>
                                 <Monitor className="w-16 h-16 text-purple-400/30" />
                                 <p className="text-sm text-gray-600">Live remote session preview</p>
                             </div>
