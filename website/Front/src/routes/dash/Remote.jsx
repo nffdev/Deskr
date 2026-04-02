@@ -288,7 +288,13 @@ export default function Remote() {
                 }} />
                 <ToolbarBtn icon={MousePointer2} label="Cursor" active />
                 <ToolbarBtn icon={Keyboard} label="Keyboard" onClick={() => setShowKeyboard(!showKeyboard)} active={showKeyboard} />
-                <ToolbarBtn icon={Camera} label="Screenshot" />
+                <ToolbarBtn icon={Camera} label="Screenshot" onClick={() => {
+                  if (!screenFrame) return;
+                  const a = document.createElement('a');
+                  a.href = screenFrame;
+                  a.download = `screenshot_${selectedDevice?.deviceInfo || 'remote'}_${Date.now()}.jpg`;
+                  a.click();
+                }} />
                 <ToolbarBtn icon={RotateCcw} label="Refresh" />
                 <div className="relative">
                   <button
