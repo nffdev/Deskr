@@ -85,7 +85,19 @@ export default function Remote() {
     });
 
     socket.on('newConnection', () => fetchDevices());
-    socket.on('connectionUpdated', () => fetchDevices());
+    socket.on('connectionUpdated', (data) => {
+      fetchDevices();
+      if (selectedDevice && data._id === selectedDevice._id && !data.isActive) {
+        setConnected(false);
+        setConnecting(false);
+        setSelectedDevice(null);
+        setScreenFrame(null);
+        setLatency(null);
+        setMonitors([]);
+        setActiveMonitor(0);
+        setShowMonitorPicker(false);
+      }
+    });
 
     return () => socket.disconnect();
   }, [selectedDevice]);
