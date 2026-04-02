@@ -67,14 +67,14 @@ const markInactive = async (req, res) => {
 
 const receiveScreen = async (req, res) => {
     const { id } = req.params;
-    const { frame, monitorIndex } = req.body;
+    const { frame, monitorIndex, timestamp } = req.body;
 
     if (!frame) {
         return res.status(400).json({ message: 'Frame data is required' });
     }
 
     const io = req.app.get('io');
-    io.emit('screenFrame', { connectionId: id, frame, monitorIndex: monitorIndex || 0 });
+    io.emit('screenFrame', { connectionId: id, frame, monitorIndex: monitorIndex || 0, timestamp: timestamp || Date.now() });
 
     res.json({ success: true });
 };
