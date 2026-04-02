@@ -1,10 +1,35 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Settings, Monitor, Radio, Package } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
+import io from 'socket.io-client';
+import config from '@/config.json';
+
+const socketInstance = { current: null };
 
 export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    if (!socketInstance.current) {
+      socketInstance.current = io(config.BASE_API.replace('/api', ''), {
+        transports: ['websocket', 'polling']
+      });
+    }
+
+    socketInstance.current.on('newConnection', (data) => {
+      toast.success('New device connected', {
+        description: data?.deviceInfo || data?.ip || 'A new device is now online',
+      });
+    });
+
+    return () => {};
+  }, []);
 
   const tabs = [
     { path: '/dash/dashboard', icon: Monitor, label: 'Devices' },
