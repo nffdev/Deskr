@@ -3,6 +3,7 @@ import { AuthWrapper } from "@/lib/hooks/useAuth";
 import { UserContextProvider } from "@/lib/contexts/userContext";
 import useRouter from "@/lib/hooks/useRouter";
 import NotFound from "@/routes/NotFound";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function App() {
   const routes = useRouter();
@@ -19,6 +20,7 @@ export default function App() {
           </Routes>
         </AuthWrapper>
       </UserContextProvider>
+      <Toaster position="top-right" />
     </BrowserRouter>
   );
 }
