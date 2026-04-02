@@ -53,6 +53,20 @@ app.use(base_route + '/connections', connectionsRoutes);
 const errorHandler = require('./middleware/errorHandler');
 app.use(errorHandler);
 
+const Connection = require('./models/Connection');
+setInterval(async () => {
+    try {
+        const activeConnections = await Connection.find({ isActive: true });
+        for (const conn of activeConnections) {
+            if (!conn.isConnectionActive()) {
+                conn.isActive = false;
+                await conn.save();
+                io.emit('connectionUpdated', conn);
+            }
+        }
+    } catch (e) {}
+}, 5000);
+
 process
     .setMaxListeners(0)
     .on("uncaughtException", err => console.error(err))
