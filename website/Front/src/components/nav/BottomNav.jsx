@@ -28,6 +28,20 @@ export default function BottomNav() {
       });
     });
 
+    socketInstance.current.on('buildProgress', (data) => {
+      if (data.progress === 100) {
+        if (data.success) {
+          toast.success('Build completed', {
+            description: data.fileName || 'Your executable is ready to download',
+          });
+        } else {
+          toast.error('Build failed', {
+            description: data.error?.substring(0, 100) || 'An error occurred during the build',
+          });
+        }
+      }
+    });
+
     return () => {};
   }, []);
 
