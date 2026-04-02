@@ -17,6 +17,7 @@ export default function Remote() {
   const [fullscreen, setFullscreen] = useState(false);
   const [showToolbar, setShowToolbar] = useState(true);
   const [showKeyboard, setShowKeyboard] = useState(false);
+  const [mouseControl, setMouseControl] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [showDeviceList, setShowDeviceList] = useState(false);
   const [screenFrame, setScreenFrame] = useState(null);
@@ -180,6 +181,59 @@ export default function Remote() {
     connectingRef.current = false;
   };
 
+  const lastMouseMove = useRef(0);
+
+  const mouseControlRef = useRef(false);
+  useEffect(() => { mouseControlRef.current = mouseControl; }, [mouseControl]);
+
+  const sendMouseEvent = (type, e) => {
+    if (!mouseControlRef.current) { return; }
+    if (type === 'mouseMove') {
+      const now = Date.now();
+      if (now - lastMouseMove.current < 50) return;
+      lastMouseMove.current = now;
+    }
+    if (!selectedDevice || !screenRef.current || !screenFrame) return;
+    const rect = screenRef.current.getBoundingClientRect();
+    const monitor = monitors[activeMonitor];
+    const screenW = monitor ? monitor.width : 1920;
+    const screenH = monitor ? monitor.height : 1080;
+
+    const imgAspect = screenW / screenH;
+    const containerAspect = rect.width / rect.height;
+
+    let imgX, imgY, imgW, imgH;
+    if (containerAspect > imgAspect) {
+      imgH = rect.height;
+      imgW = imgH * imgAspect;
+      imgX = (rect.width - imgW) / 2;
+      imgY = 0;
+    } else {
+      imgW = rect.width;
+      imgH = imgW / imgAspect;
+      imgX = 0;
+      imgY = (rect.height - imgH) / 2;
+    }
+
+    const relX = (e.clientX - rect.left - imgX) / imgW;
+    const relY = (e.clientY - rect.top - imgY) / imgH;
+
+    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return;
+
+    const x = Math.round(relX * screenW);
+    const y = Math.round(relY * screenH);
+
+    const token = localStorage.getItem('token');
+    fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ type, x, y, button: e.button || 0 })
+    }).catch(() => {});
+  };
+
   const manageDisconnect = () => {
     setConnected(false);
     setSelectedDevice(null);
@@ -322,7 +376,7 @@ export default function Remote() {
                   setFullscreen(true);
                   screenRef.current?.requestFullscreen?.();
                 }} />
-                <ToolbarBtn icon={MousePointer2} label="Cursor" active />
+                <ToolbarBtn icon={MousePointer2} label="Cursor" active={mouseControl} onClick={() => setMouseControl(!mouseControl)} />
                 <ToolbarBtn icon={Keyboard} label="Keyboard" onClick={() => setShowKeyboard(!showKeyboard)} active={showKeyboard} />
                 <ToolbarBtn icon={Camera} label="Screenshot" onClick={() => {
                   if (!screenFrame) return;
@@ -387,15 +441,19 @@ export default function Remote() {
 
             <div
               ref={screenRef}
-              className={`relative bg-black rounded-xl overflow-hidden select-none ${
+              className={`relative bg-black rounded-xl overflow-hidden select-none ${mouseControl ? 'cursor-none' : ''} ${
                 fullscreen ? 'fixed inset-0 z-50 rounded-none' : 'aspect-video'
               }`}
+              onMouseMove={(e) => sendMouseEvent('mouseMove', e)}
+              onMouseDown={(e) => { e.preventDefault(); sendMouseEvent('mouseDown', e); }}
+              onMouseUp={(e) => sendMouseEvent('mouseUp', e)}
+              onContextMenu={(e) => e.preventDefault()}
             >
               {screenFrame ? (
                 <img
                   src={screenFrame}
                   alt="Remote screen"
-                  className="absolute inset-0 w-full h-full object-contain"
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                   draggable={false}
                 />
               ) : (
