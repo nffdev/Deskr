@@ -84,6 +84,9 @@ export default function Remote() {
       }
     });
 
+    socket.on('newConnection', () => fetchDevices());
+    socket.on('connectionUpdated', () => fetchDevices());
+
     return () => socket.disconnect();
   }, [selectedDevice]);
 
