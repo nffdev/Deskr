@@ -234,38 +234,59 @@ export default function Remote() {
       <div className="relative z-10 max-w-5xl mx-auto p-3 sm:p-4">
         {!connected && !connecting ? (
           <div className="space-y-4">
-            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 sm:p-5">
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 sm:p-5 overflow-visible relative z-20">
               <h2 className="font-semibold text-base sm:text-lg text-white mb-4">Select Device</h2>
-              <div className="space-y-2">
-                {devices.length === 0 && (
-                  <p className="text-center text-sm text-gray-500 py-4">No devices found.</p>
+              <div className="relative">
+                <button
+                  onClick={() => setShowDeviceList(!showDeviceList)}
+                  className="w-full p-3 sm:p-4 rounded-xl border border-white/[0.08] bg-gray-800/50 flex items-center gap-3 hover:border-white/[0.12] transition-all"
+                >
+                  <div className="w-10 h-10 bg-gray-800/60 rounded-lg flex items-center justify-center shrink-0">
+                    <Monitor className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    {devices.filter(d => d.isActive).length > 0 ? (
+                      <>
+                        <p className="text-sm text-white font-medium">Choose a device</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500">{devices.filter(d => d.isActive).length} device{devices.filter(d => d.isActive).length > 1 ? 's' : ''} online</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-400 font-medium">No devices online</p>
+                        <p className="text-[10px] sm:text-xs text-gray-600">Waiting for connections...</p>
+                      </>
+                    )}
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showDeviceList ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showDeviceList && (
+                  <div className="absolute top-full mt-2 left-0 right-0 bg-gray-900 border border-white/[0.08] rounded-xl shadow-xl z-30 py-1 max-h-60 overflow-y-auto">
+                    {devices.filter(d => d.isActive).length === 0 ? (
+                      <p className="px-4 py-3 text-sm text-gray-500 text-center">No online devices</p>
+                    ) : (
+                      devices.filter(d => d.isActive).map((device) => (
+                        <button
+                          key={device._id}
+                          onClick={() => manageConnect(device)}
+                          className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-800/60 transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-gray-800/60 rounded-lg flex items-center justify-center shrink-0">
+                            <Monitor className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-sm text-white font-medium truncate">{device.deviceInfo}</p>
+                            <p className="text-[10px] text-gray-500">{device.ip}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <span className="text-xs text-green-400">Online</span>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
                 )}
-                {devices.map((device) => (
-                  <button
-                    key={device._id}
-                    onClick={() => device.isActive && manageConnect(device)}
-                    disabled={!device.isActive}
-                    className={`w-full p-3 sm:p-4 rounded-xl border flex items-center gap-3 transition-all ${
-                      !device.isActive
-                        ? 'border-white/[0.04] bg-gray-800/20 opacity-50 cursor-not-allowed'
-                        : 'border-white/[0.06] bg-gray-800/30 hover:border-purple-500/30 hover:bg-gray-800/50 cursor-pointer'
-                    }`}
-                  >
-                    <div className="w-10 h-10 bg-gray-800/60 rounded-lg flex items-center justify-center shrink-0">
-                      <Monitor className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm sm:text-base text-white font-medium truncate">{device.deviceInfo}</p>
-                      <p className="text-[10px] sm:text-xs text-gray-500">{device.ip}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <div className={`w-2 h-2 rounded-full ${device.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
-                      <span className={`text-xs ${device.isActive ? 'text-green-400' : 'text-red-400'}`}>
-                        {device.isActive ? 'Online' : 'Offline'}
-                      </span>
-                    </div>
-                  </button>
-                ))}
               </div>
             </div>
 
