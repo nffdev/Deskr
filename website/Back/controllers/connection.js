@@ -108,24 +108,26 @@ const getMonitors = async (req, res) => {
 
 const sendCommand = async (req, res) => {
     const { id } = req.params;
-    const { type, monitorIndex } = req.body;
+    const body = req.body;
 
-    pendingCommands[id] = { type, monitorIndex };
+    if (!pendingCommands[id]) pendingCommands[id] = [];
+    pendingCommands[id].push(body);
 
-    const io = req.app.get('io');
-    io.emit('remoteCommand', { connectionId: id, type, monitorIndex });
+    if (pendingCommands[id].length > 50) {
+        pendingCommands[id] = pendingCommands[id].slice(-50);
+    }
 
     res.json({ success: true });
 };
 
 const getCommand = async (req, res) => {
     const { id } = req.params;
-    const cmd = pendingCommands[id];
-    if (cmd) {
-        delete pendingCommands[id];
-        return res.json(cmd);
+    const cmds = pendingCommands[id];
+    if (cmds && cmds.length > 0) {
+        pendingCommands[id] = [];
+        return res.json({ commands: cmds });
     }
-    res.json({});
+    res.json({ commands: [] });
 };
 
 module.exports = {
