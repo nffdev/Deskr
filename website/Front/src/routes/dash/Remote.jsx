@@ -27,7 +27,6 @@ export default function Remote() {
   const [showMonitorPicker, setShowMonitorPicker] = useState(false);
   const screenRef = useRef(null);
   const socketRef = useRef(null);
-  const lastFrameTime = useRef(null);
   const connectingRef = useRef(false);
 
   const API_BASE = `${config.BASE_API}/v${config.API_VERSION}`;
@@ -73,11 +72,9 @@ export default function Remote() {
     socket.on('screenFrame', (data) => {
       const dev = selectedDeviceRef.current;
       if (dev && data.connectionId === dev._id) {
-        const now = Date.now();
-        if (lastFrameTime.current) {
-          setLatency(now - lastFrameTime.current);
+        if (data.timestamp) {
+          setLatency(Date.now() - data.timestamp);
         }
-        lastFrameTime.current = now;
         setScreenFrame(`data:image/jpeg;base64,${data.frame}`);
       }
     });
