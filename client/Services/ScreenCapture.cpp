@@ -4,6 +4,7 @@
 #include "../helpers/parser.h"
 #include <gdiplus.h>
 #include <iostream>
+#include <chrono>
 
 #pragma comment(lib, "gdiplus.lib")
 
@@ -239,8 +240,11 @@ void ScreenCapture::CaptureLoop() {
             auto imageData = CaptureScreen(40, currentMonitor);
             if (!imageData.empty()) {
                 std::string base64 = ToBase64(imageData);
+                auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count();
                 std::string json = "{\"connectionId\":\"" + _connectionId +
                     "\",\"monitorIndex\":" + std::to_string(_monitorIndex.load()) +
+                    ",\"timestamp\":" + std::to_string(now) +
                     ",\"frame\":\"" + base64 + "\"}";
                 std::string url = Constants::API_BASE + "/connections/" + _connectionId + "/screen";
                 HttpClient::Post(url, json);
