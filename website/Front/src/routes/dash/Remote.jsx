@@ -310,7 +310,11 @@ export default function Remote() {
                   a.download = `screenshot_${selectedDevice?.deviceInfo || 'remote'}_${Date.now()}.jpg`;
                   a.click();
                 }} />
-                <ToolbarBtn icon={RotateCcw} label="Refresh" />
+                <ToolbarBtn icon={RotateCcw} label="Refresh" onClick={() => {
+                  setScreenFrame(null);
+                  setLatency(null);
+                  if (selectedDevice) fetchMonitors(selectedDevice._id);
+                }} />
                 <div className="relative">
                   <button
                     onClick={() => setShowMonitorPicker(!showMonitorPicker)}
