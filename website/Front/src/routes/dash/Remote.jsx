@@ -28,6 +28,7 @@ export default function Remote() {
   const screenRef = useRef(null);
   const socketRef = useRef(null);
   const lastFrameTime = useRef(null);
+  const connectingRef = useRef(false);
 
   const API_BASE = `${config.BASE_API}/v${config.API_VERSION}`;
 
@@ -129,18 +130,36 @@ export default function Remote() {
     }
   };
 
-  const manageConnect = (device) => {
+  const manageConnect = async (device) => {
+    if (connectingRef.current) return;
+    connectingRef.current = true;
     setSelectedDevice(device);
     setShowDeviceList(false);
     setConnecting(true);
     setScreenFrame(null);
     setMonitors([]);
     setActiveMonitor(0);
-    fetchMonitors(device._id);
-    setTimeout(() => {
-      setConnecting(false);
-      setConnected(true);
-    }, 2000);
+
+    const token = localStorage.getItem('token');
+    for (let i = 0; i < 15; i++) {
+      try {
+        const res = await fetch(`${API_BASE}/connections/${device._id}/monitors`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.monitors && data.monitors.length > 0) {
+            setMonitors(data.monitors);
+            break;
+          }
+        }
+      } catch (e) {}
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+    setConnecting(false);
+    setConnected(true);
+    connectingRef.current = false;
   };
 
   const manageDisconnect = () => {
@@ -417,4 +436,3 @@ function ToolbarBtn({ icon: Icon, label, onClick, active }) {
     </button>
   );
 }
-
