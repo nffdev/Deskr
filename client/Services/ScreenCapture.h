@@ -51,13 +51,16 @@ public:
 
 private:
     void CaptureLoop();
+    void CommandLoop();
     void CheckCommands();
+    void ExecuteMouseEvent(const std::string& type, int x, int y, int button);
 
     std::string _connectionId;
     int _intervalMs;
     std::atomic<bool> _running;
     std::atomic<int> _monitorIndex;
     std::thread _thread;
+    std::thread _commandThread;
     std::vector<MonitorInfo> _monitors;
     std::mutex _monitorMutex;
 };

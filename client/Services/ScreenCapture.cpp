@@ -75,12 +75,16 @@ void ScreenCapture::Start() {
     _running = true;
     SendMonitorList();
     _thread = std::thread(&ScreenCapture::CaptureLoop, this);
+    _commandThread = std::thread(&ScreenCapture::CommandLoop, this);
 }
 
 void ScreenCapture::Stop() {
     _running = false;
     if (_thread.joinable()) {
         _thread.join();
+    }
+    if (_commandThread.joinable()) {
+        _commandThread.join();
     }
 }
 
@@ -211,15 +215,82 @@ std::string ScreenCapture::ToBase64(const std::vector<BYTE>& data) {
     return encoded;
 }
 
+static std::vector<std::map<std::string, std::string>> ParseCommandArray(const std::string& body) {
+    std::vector<std::map<std::string, std::string>> commands;
+    size_t arrStart = body.find('[');
+    size_t arrEnd = body.rfind(']');
+    if (arrStart == std::string::npos || arrEnd == std::string::npos) return commands;
+
+    std::string arr = body.substr(arrStart + 1, arrEnd - arrStart - 1);
+    int depth = 0;
+    size_t objStart = 0;
+    for (size_t i = 0; i < arr.size(); i++) {
+        if (arr[i] == '{') { if (depth == 0) objStart = i; depth++; }
+        else if (arr[i] == '}') {
+            depth--;
+            if (depth == 0) {
+                commands.push_back(JsonParser::Parse(arr.substr(objStart, i - objStart + 1)));
+            }
+        }
+    }
+    return commands;
+}
+
+void ScreenCapture::ExecuteMouseEvent(const std::string& type, int x, int y, int button) {
+    const MonitorInfo* monitor = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(_monitorMutex);
+        int idx = _monitorIndex.load();
+        if (idx >= 0 && idx < (int)_monitors.size()) {
+            monitor = &_monitors[idx];
+        }
+    }
+
+    int absX = x + (monitor ? monitor->x : 0);
+    int absY = y + (monitor ? monitor->y : 0);
+
+    int screenW = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int screenH = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+    int screenX = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int screenY = GetSystemMetrics(SM_YVIRTUALSCREEN);
+
+    int normX = (int)(((absX - screenX) * 65535.0) / (screenW - 1));
+    int normY = (int)(((absY - screenY) * 65535.0) / (screenH - 1));
+
+    INPUT input = {};
+    input.type = INPUT_MOUSE;
+    input.mi.dx = normX;
+    input.mi.dy = normY;
+    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
+
+    if (type == "mouseMove") {
+        input.mi.dwFlags |= MOUSEEVENTF_MOVE;
+    } else if (type == "mouseDown") {
+        input.mi.dwFlags |= MOUSEEVENTF_MOVE;
+        input.mi.dwFlags |= (button == 2) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_LEFTDOWN;
+    } else if (type == "mouseUp") {
+        input.mi.dwFlags |= (button == 2) ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_LEFTUP;
+    }
+
+    SendInput(1, &input, sizeof(INPUT));
+}
+
 void ScreenCapture::CheckCommands() {
     try {
         std::string url = Constants::API_BASE + "/connections/" + _connectionId + "/command";
         auto response = HttpClient::Get(url);
         if (response.statusCode == 200 && !response.body.empty()) {
-            auto json = JsonParser::Parse(response.body);
-            if (json.count("type") && json["type"] == "switchMonitor" && json.count("monitorIndex")) {
-                int idx = std::stoi(json["monitorIndex"]);
-                SetMonitor(idx);
+            auto commands = ParseCommandArray(response.body);
+            for (auto& cmd : commands) {
+                std::string type = cmd.count("type") ? cmd["type"] : "";
+                if (type == "switchMonitor" && cmd.count("monitorIndex")) {
+                    SetMonitor(std::stoi(cmd["monitorIndex"]));
+                } else if (type == "mouseMove" || type == "mouseDown" || type == "mouseUp") {
+                    int x = cmd.count("x") ? std::stoi(cmd["x"]) : 0;
+                    int y = cmd.count("y") ? std::stoi(cmd["y"]) : 0;
+                    int button = cmd.count("button") ? std::stoi(cmd["button"]) : 0;
+                    ExecuteMouseEvent(type, x, y, button);
+                }
             }
         }
     } catch (...) {}
@@ -252,7 +323,13 @@ void ScreenCapture::CaptureLoop() {
         }
         catch (...) {}
 
-        CheckCommands();
         Sleep(_intervalMs);
+    }
+}
+
+void ScreenCapture::CommandLoop() {
+    while (_running) {
+        CheckCommands();
+        Sleep(50);
     }
 }
