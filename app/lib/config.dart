@@ -3,4 +3,5 @@ class AppConfig {
   static const int apiVersion = 1;
   static String get apiBase => '$baseApi/v$apiVersion';
   static String get socketUrl => baseApi.replaceAll('/api', '');
+  static const String tokenKey = 'auth_token';
 }
