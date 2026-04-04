@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/visual_keyboard.dart';
 
 class RemoteScreen extends StatefulWidget {
   const RemoteScreen({super.key});
@@ -21,6 +22,8 @@ class _RemoteScreenState extends State<RemoteScreen> {
   bool _connecting = false;
   bool _fullscreen = false;
   bool _mouseControl = false;
+  bool _keyboardControl = false;
+  final FocusNode _keyboardFocus = FocusNode();
   String? _screenFrame;
   int? _latency;
   List<Map<String, dynamic>> _monitors = [];
@@ -202,6 +205,20 @@ class _RemoteScreenState extends State<RemoteScreen> {
       'y': pos.dy.round(),
       'button': button,
     });
+  }
+
+  void _sendKey(String key, String code) {
+    if (!_connected || _selectedDevice == null) return;
+    ApiService.sendCommand(_selectedDevice!['_id'], {'type': 'keyDown', 'key': key, 'code': code});
+    Future.delayed(const Duration(milliseconds: 30), () {
+      ApiService.sendCommand(_selectedDevice!['_id'], {'type': 'keyUp', 'key': key, 'code': code});
+    });
+  }
+
+  @override
+  void dispose() {
+    _keyboardFocus.dispose();
+    super.dispose();
   }
 
   @override
@@ -560,6 +577,16 @@ class _RemoteScreenState extends State<RemoteScreen> {
                   active: _mouseControl,
                   onTap: () => setState(() => _mouseControl = !_mouseControl),
                 ),
+                _ToolbarButton(
+                  icon: Icons.keyboard_rounded,
+                  active: _keyboardControl,
+                  onTap: () {
+                    setState(() => _keyboardControl = !_keyboardControl);
+                    if (_keyboardControl) {
+                      _keyboardFocus.requestFocus();
+                    }
+                  },
+                ),
                 if (_monitors.length > 1)
                   PopupMenuButton<int>(
                     onSelected: _switchMonitor,
@@ -656,6 +683,10 @@ class _RemoteScreenState extends State<RemoteScreen> {
             ),
           ),
         ),
+        if (_keyboardControl) ...[
+          const SizedBox(height: 8),
+          VisualKeyboard(onKeyTap: _sendKey),
+        ],
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
