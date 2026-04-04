@@ -234,6 +234,32 @@ export default function Remote() {
     }).catch(() => {});
   };
 
+  const sendKeyEvent = (type, e) => {
+    if (!connected || !selectedDevice || !showKeyboard) return;
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ type, key: e.key, code: e.code })
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!connected || !showKeyboard) return;
+    const onKeyDown = (e) => sendKeyEvent('keyDown', e);
+    const onKeyUp = (e) => sendKeyEvent('keyUp', e);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, [connected, showKeyboard, selectedDevice]);
+
   const manageDisconnect = () => {
     setConnected(false);
     setSelectedDevice(null);
