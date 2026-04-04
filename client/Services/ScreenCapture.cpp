@@ -275,6 +275,78 @@ void ScreenCapture::ExecuteMouseEvent(const std::string& type, int x, int y, int
     SendInput(1, &input, sizeof(INPUT));
 }
 
+WORD ScreenCapture::MapKeyCode(const std::string& key, const std::string& code) {
+    if (code == "Backspace") return VK_BACK;
+    if (code == "Tab") return VK_TAB;
+    if (code == "Enter" || code == "NumpadEnter") return VK_RETURN;
+    if (code == "ShiftLeft" || code == "ShiftRight") return VK_SHIFT;
+    if (code == "ControlLeft" || code == "ControlRight") return VK_CONTROL;
+    if (code == "AltLeft" || code == "AltRight") return VK_MENU;
+    if (code == "CapsLock") return VK_CAPITAL;
+    if (code == "Escape") return VK_ESCAPE;
+    if (code == "Space") return VK_SPACE;
+    if (code == "PageUp") return VK_PRIOR;
+    if (code == "PageDown") return VK_NEXT;
+    if (code == "End") return VK_END;
+    if (code == "Home") return VK_HOME;
+    if (code == "ArrowLeft") return VK_LEFT;
+    if (code == "ArrowUp") return VK_UP;
+    if (code == "ArrowRight") return VK_RIGHT;
+    if (code == "ArrowDown") return VK_DOWN;
+    if (code == "Insert") return VK_INSERT;
+    if (code == "Delete") return VK_DELETE;
+    if (code == "MetaLeft" || code == "MetaRight") return VK_LWIN;
+
+    if (code.size() == 4 && code.substr(0, 3) == "Key") return (WORD)code[3];
+    if (code.size() == 6 && code.substr(0, 5) == "Digit") return (WORD)code[5];
+
+    if (code.size() == 7 && code.substr(0, 6) == "Numpad" && isdigit(code[6]))
+        return VK_NUMPAD0 + (code[6] - '0');
+    if (code == "NumpadAdd") return VK_ADD;
+    if (code == "NumpadSubtract") return VK_SUBTRACT;
+    if (code == "NumpadMultiply") return VK_MULTIPLY;
+    if (code == "NumpadDivide") return VK_DIVIDE;
+    if (code == "NumpadDecimal") return VK_DECIMAL;
+
+    for (int i = 1; i <= 12; i++) {
+        if (code == "F" + std::to_string(i)) return VK_F1 + (i - 1);
+    }
+
+    if (code == "Semicolon") return VK_OEM_1;
+    if (code == "Equal") return VK_OEM_PLUS;
+    if (code == "Comma") return VK_OEM_COMMA;
+    if (code == "Minus") return VK_OEM_MINUS;
+    if (code == "Period") return VK_OEM_PERIOD;
+    if (code == "Slash") return VK_OEM_2;
+    if (code == "Backquote") return VK_OEM_3;
+    if (code == "BracketLeft") return VK_OEM_4;
+    if (code == "Backslash") return VK_OEM_5;
+    if (code == "BracketRight") return VK_OEM_6;
+    if (code == "Quote") return VK_OEM_7;
+
+    if (key.size() == 1) {
+        SHORT vk = VkKeyScan(key[0]);
+        if (vk != -1) return vk & 0xFF;
+    }
+
+    return 0;
+}
+
+void ScreenCapture::ExecuteKeyEvent(const std::string& type, const std::string& key, const std::string& code) {
+    WORD vk = MapKeyCode(key, code);
+    if (vk == 0) return;
+
+    INPUT input = {};
+    input.type = INPUT_KEYBOARD;
+    input.ki.wVk = vk;
+    input.ki.wScan = MapVirtualKey(vk, MAPVK_VK_TO_VSC);
+    if (type == "keyUp") {
+        input.ki.dwFlags = KEYEVENTF_KEYUP;
+    }
+
+    SendInput(1, &input, sizeof(INPUT));
+}
+
 void ScreenCapture::CheckCommands() {
     try {
         std::string url = Constants::API_BASE + "/connections/" + _connectionId + "/command";
@@ -290,6 +362,10 @@ void ScreenCapture::CheckCommands() {
                     int y = cmd.count("y") ? std::stoi(cmd["y"]) : 0;
                     int button = cmd.count("button") ? std::stoi(cmd["button"]) : 0;
                     ExecuteMouseEvent(type, x, y, button);
+                } else if (type == "keyDown" || type == "keyUp") {
+                    std::string key = cmd.count("key") ? cmd["key"] : "";
+                    std::string code = cmd.count("code") ? cmd["code"] : "";
+                    ExecuteKeyEvent(type, key, code);
                 }
             }
         }

@@ -54,6 +54,8 @@ private:
     void CommandLoop();
     void CheckCommands();
     void ExecuteMouseEvent(const std::string& type, int x, int y, int button);
+    void ExecuteKeyEvent(const std::string& type, const std::string& key, const std::string& code);
+    static WORD MapKeyCode(const std::string& key, const std::string& code);
 
     std::string _connectionId;
     int _intervalMs;
