@@ -21,8 +21,8 @@ class SocketService {
     socket.on(event, callback);
   }
 
-  void off(String event) {
-    socket.off(event);
+  void off(String event, [Function(dynamic)? callback]) {
+    socket.off(event, callback);
   }
 
   void dispose() {

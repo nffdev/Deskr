@@ -63,7 +63,7 @@ class VisualKeyboard extends StatelessWidget {
       child: Column(
         children: _rows.map((row) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.only(bottom: 3),
             child: Row(
               children: row.map((k) {
                 final label = k['label']!;
@@ -78,7 +78,7 @@ class VisualKeyboard extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () => onKeyTap(key, code),
                       child: Container(
-                        height: 36,
+                        height: 28,
                         decoration: BoxDecoration(
                           color: AppColors.surfaceLight.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(6),
@@ -89,7 +89,7 @@ class VisualKeyboard extends StatelessWidget {
                             label,
                             style: const TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w500,
                             ),
                           ),

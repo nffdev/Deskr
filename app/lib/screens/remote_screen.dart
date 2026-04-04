@@ -20,7 +20,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
   Map<String, dynamic>? _selectedDevice;
   bool _connected = false;
   bool _connecting = false;
-  bool _fullscreen = false;
   bool _mouseControl = false;
   bool _keyboardControl = false;
   final FocusNode _keyboardFocus = FocusNode();
@@ -133,16 +132,23 @@ class _RemoteScreenState extends State<RemoteScreen> {
   }
 
   void _enterFullscreen() {
-    setState(() => _fullscreen = true);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: true,
+        pageBuilder: (_, __, ___) => _FullscreenView(
+          parentState: this,
+          onExit: _exitFullscreen,
+        ),
+      ),
+    );
   }
 
   void _exitFullscreen() {
-    setState(() => _fullscreen = false);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -150,6 +156,9 @@ class _RemoteScreenState extends State<RemoteScreen> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 
   Offset? _getRelativePosition(Offset globalPosition) {
@@ -223,51 +232,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_fullscreen && _connected) {
-      return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) _exitFullscreen();
-        },
-        child: Scaffold(
-          backgroundColor: Colors.black,
-          body: Stack(
-            children: [
-              _buildScreenArea(),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: GestureDetector(
-                  onTap: _exitFullscreen,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.fullscreen_exit_rounded, color: Colors.white, size: 20),
-                  ),
-                ),
-              ),
-              if (_mouseControl)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.purple.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text('Touch Control', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       body: Stack(
         children: [
@@ -739,6 +703,223 @@ class _ToolbarButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, size: 18, color: active ? AppColors.purpleLight : AppColors.textSecondary),
+      ),
+    );
+  }
+}
+
+class _FullscreenView extends StatefulWidget {
+  final _RemoteScreenState parentState;
+  final VoidCallback onExit;
+
+  const _FullscreenView({
+    required this.parentState,
+    required this.onExit,
+  });
+
+  @override
+  State<_FullscreenView> createState() => _FullscreenViewState();
+}
+
+class _FullscreenViewState extends State<_FullscreenView> {
+  bool _mouseControl = false;
+  bool _keyboardControl = false;
+  String? _screenFrame;
+  final GlobalKey _fsScreenKey = GlobalKey();
+  DateTime? _lastMouseMove;
+
+  @override
+  void initState() {
+    super.initState();
+    _mouseControl = widget.parentState._mouseControl;
+    _keyboardControl = widget.parentState._keyboardControl;
+    _screenFrame = widget.parentState._screenFrame;
+
+    SocketService.instance.on('screenFrame', _onFrame);
+  }
+
+  void _onFrame(dynamic data) {
+    final parent = widget.parentState;
+    if (parent._selectedDevice != null && data['connectionId'] == parent._selectedDevice!['_id']) {
+      if (mounted) {
+        setState(() => _screenFrame = data['frame']);
+        parent._screenFrame = data['frame'];
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    SocketService.instance.off('screenFrame', _onFrame);
+    super.dispose();
+  }
+
+  Offset? _getRelativePosition(Offset globalPosition) {
+    final renderBox = _fsScreenKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null || _screenFrame == null) return null;
+
+    final local = renderBox.globalToLocal(globalPosition);
+    final size = renderBox.size;
+    final parent = widget.parentState;
+
+    final monitor = parent._monitors.isNotEmpty ? parent._monitors[parent._activeMonitor] : null;
+    final screenW = (monitor?['width'] ?? 1920).toDouble();
+    final screenH = (monitor?['height'] ?? 1080).toDouble();
+
+    final imgAspect = screenW / screenH;
+    final containerAspect = size.width / size.height;
+
+    double imgX, imgY, imgW, imgH;
+    if (containerAspect > imgAspect) {
+      imgH = size.height;
+      imgW = imgH * imgAspect;
+      imgX = (size.width - imgW) / 2;
+      imgY = 0;
+    } else {
+      imgW = size.width;
+      imgH = imgW / imgAspect;
+      imgX = 0;
+      imgY = (size.height - imgH) / 2;
+    }
+
+    final relX = (local.dx - imgX) / imgW;
+    final relY = (local.dy - imgY) / imgH;
+
+    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return null;
+    return Offset(relX * screenW, relY * screenH);
+  }
+
+  void _sendMouseEvent(String type, Offset globalPosition, {int button = 0}) {
+    if (!_mouseControl || widget.parentState._selectedDevice == null) return;
+
+    if (type == 'mouseMove') {
+      final now = DateTime.now();
+      if (_lastMouseMove != null && now.difference(_lastMouseMove!).inMilliseconds < 50) return;
+      _lastMouseMove = now;
+    }
+
+    final pos = _getRelativePosition(globalPosition);
+    if (pos == null) return;
+
+    ApiService.sendCommand(widget.parentState._selectedDevice!['_id'], {
+      'type': type,
+      'x': pos.dx.round(),
+      'y': pos.dy.round(),
+      'button': button,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) widget.onExit();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  GestureDetector(
+                    onPanStart: (d) => _sendMouseEvent('mouseMove', d.globalPosition),
+                    onPanUpdate: (d) => _sendMouseEvent('mouseMove', d.globalPosition),
+                    onTapDown: (d) => _sendMouseEvent('mouseDown', d.globalPosition),
+                    onTapUp: (d) => _sendMouseEvent('mouseUp', d.globalPosition),
+                    onLongPressStart: (d) => _sendMouseEvent('mouseDown', d.globalPosition, button: 2),
+                    onLongPressEnd: (d) => _sendMouseEvent('mouseUp', d.globalPosition, button: 2),
+                    child: Container(
+                      key: _fsScreenKey,
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.black,
+                      child: _screenFrame != null
+                          ? Image.memory(
+                              base64Decode(_screenFrame!),
+                              fit: BoxFit.contain,
+                              gaplessPlayback: true,
+                            )
+                          : Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.monitor_rounded, size: 48, color: Colors.grey[800]),
+                                  const SizedBox(height: 12),
+                                  Text('Waiting for screen data...', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => _mouseControl = !_mouseControl),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: _mouseControl ? AppColors.purple.withValues(alpha: 0.6) : Colors.black54,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.touch_app_rounded, color: Colors.white, size: 20),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _keyboardControl = !_keyboardControl),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: _keyboardControl ? AppColors.purple.withValues(alpha: 0.6) : Colors.black54,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.keyboard_rounded, color: Colors.white, size: 20),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: widget.onExit,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.fullscreen_exit_rounded, color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_mouseControl)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.purple.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text('Touch Control', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (_keyboardControl)
+              Container(
+                color: AppColors.background,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: VisualKeyboard(onKeyTap: widget.parentState._sendKey),
+              ),
+          ],
+        ),
       ),
     );
   }
