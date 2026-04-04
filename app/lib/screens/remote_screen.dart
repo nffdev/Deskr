@@ -40,9 +40,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
         if (mounted) {
           setState(() {
             _screenFrame = data['frame'];
-            if (data['timestamp'] != null) {
-              _latency = DateTime.now().millisecondsSinceEpoch - (data['timestamp'] as int);
-            }
+            _latency = SocketService.instance.latency;
           });
         }
       }
