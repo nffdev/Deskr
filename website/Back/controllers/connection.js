@@ -130,6 +130,16 @@ const getCommand = async (req, res) => {
     res.json({ commands: [] });
 };
 
+const receiveShellOutput = async (req, res) => {
+    const { id } = req.params;
+    const { output, commandId } = req.body;
+
+    const io = req.app.get('io');
+    io.emit('shellOutput', { connectionId: id, output, commandId });
+
+    res.json({ success: true });
+};
+
 module.exports = {
     recordConnection,
     getRecentConnections,
@@ -140,5 +150,6 @@ module.exports = {
     receiveMonitors,
     getMonitors,
     sendCommand,
-    getCommand
+    getCommand,
+    receiveShellOutput
 };
