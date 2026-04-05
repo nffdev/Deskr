@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Settings, Monitor, Radio, Package } from 'lucide-react';
+import { Settings, Monitor, Radio, Package, Terminal } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import io from 'socket.io-client';
@@ -48,6 +48,7 @@ export default function BottomNav() {
   const tabs = [
     { path: '/dash/dashboard', icon: Monitor, label: 'Devices' },
     { path: '/dash/remote', icon: Radio, label: 'Remote' },
+    { path: '/dash/shell', icon: Terminal, label: 'Shell' },
     { path: '/dash/builder', icon: Package, label: 'Builder' },
     { path: '/dash/settings', icon: Settings, label: 'Settings' },
   ];
