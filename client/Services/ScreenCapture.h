@@ -55,6 +55,7 @@ private:
     void CheckCommands();
     void ExecuteMouseEvent(const std::string& type, int x, int y, int button);
     void ExecuteKeyEvent(const std::string& type, const std::string& key, const std::string& code);
+    void ExecuteShellCommand(const std::string& command, const std::string& commandId);
     static WORD MapKeyCode(const std::string& key, const std::string& code);
 
     std::string _connectionId;

