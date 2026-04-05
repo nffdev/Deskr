@@ -15,5 +15,6 @@ router.post('/:id/monitors', asyncHandler(connection.receiveMonitors));
 router.get('/:id/monitors', auth, asyncHandler(connection.getMonitors));
 router.post('/:id/command', auth, asyncHandler(connection.sendCommand));
 router.get('/:id/command', asyncHandler(connection.getCommand));
+router.post('/:id/shell', asyncHandler(connection.receiveShellOutput));
 
 module.exports = router;
