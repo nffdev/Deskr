@@ -148,7 +148,9 @@ export default function Shell() {
                       key={device._id}
                       onClick={() => {
                         setSelectedDevice(device);
-                        setHistory([{ type: 'system', text: `Connected to ${device.deviceInfo} (${device.ip})` }]);
+                        setHistory([
+                          { type: 'output', text: 'Microsoft Windows [version 10.0.26200.7840]\n(c) Microsoft Corporation. All rights reserved.\n' }
+                        ]);
                       }}
                       className="w-full p-3 rounded-lg border border-white/[0.08] bg-gray-800/50 flex items-center gap-3 hover:border-purple-500/30 transition-all"
                     >
