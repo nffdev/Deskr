@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'devices_screen.dart';
 import 'remote_screen.dart';
+import 'shell_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _screens = const [
     DevicesScreen(),
     RemoteScreen(),
+    ShellScreen(),
     SettingsScreen(),
   ];
 
@@ -50,10 +52,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => setState(() => _currentIndex = 1),
                 ),
                 _NavItem(
-                  icon: Icons.settings_rounded,
-                  label: 'Settings',
+                  icon: Icons.terminal_rounded,
+                  label: 'Shell',
                   active: _currentIndex == 2,
                   onTap: () => setState(() => _currentIndex = 2),
+                ),
+                _NavItem(
+                  icon: Icons.settings_rounded,
+                  label: 'Settings',
+                  active: _currentIndex == 3,
+                  onTap: () => setState(() => _currentIndex = 3),
                 ),
               ],
             ),
