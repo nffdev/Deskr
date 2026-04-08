@@ -90,7 +90,7 @@ function writeConfigFile(buildId, config) {
         config.copyright || '',
         config.version || '1.0.0',
         config.icon || 'default',
-        config.apiUrl || 'http://localhost:8080/api',
+        config.apiUrl,
         config.language || 'cs'
     ];
     fs.writeFileSync(configPath, lines.join('\n'));
@@ -113,7 +113,8 @@ exports.uploadIcon = (req, res) => {
 };
 
 exports.startBuild = async (req, res) => {
-    const { appName, language, version, description, copyright, icon, apiUrl } = req.body;
+    const { appName, language, version, description, copyright, icon } = req.body;
+    const apiUrl = req.body.apiUrl?.trim() || `http://localhost:${process.env.PORT || 8080}/api`;
 
     if (!appName || !language) {
         return res.status(400).json({ error: 'appName and language (cs or cpp) are required.' });
@@ -139,7 +140,7 @@ exports.startBuild = async (req, res) => {
         language,
         version: version || '1.0.0',
         description: description || '',
-        apiUrl: apiUrl || '',
+        apiUrl,
         status: 'building'
     });
 
@@ -158,7 +159,7 @@ exports.startBuild = async (req, res) => {
 
         const configFilePath = path.join(buildScriptDir, template.configFile);
         injectConfig(configFilePath, {
-            '%BASE_API%': apiUrl || 'http://localhost:8080/api'
+            '%BASE_API%': apiUrl
         });
 
         writeConfigFile(buildId, { appName, description, copyright, version, icon, apiUrl, language });
