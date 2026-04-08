@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const Build = require('../models/Build');
 
 const BUILD_ENGINE = process.env.BUILD_ENGINE || 'msbuild';
 const BUILD_PATH = process.env.BUILD_PATH || process.env.MSBUILD_PATH;
@@ -131,6 +132,17 @@ exports.startBuild = async (req, res) => {
     const buildId = generateBuildId();
     const io = req.app.get('io');
 
+    const buildRecord = await Build.create({
+        buildId,
+        userId: req.user.id,
+        appName,
+        language,
+        version: version || '1.0.0',
+        description: description || '',
+        apiUrl: apiUrl || '',
+        status: 'building'
+    });
+
     res.json({ buildId, message: 'Build started.' });
 
     io.emit('buildProgress', { buildId, progress: 5, message: 'Preparing build environment...' });
@@ -208,9 +220,11 @@ exports.startBuild = async (req, res) => {
             buildErrors += data.toString();
         });
 
-        buildProcess.on('close', (code) => {
+        buildProcess.on('close', async (code) => {
             if (code !== 0) {
                 try { fs.rmSync(buildScriptDir, { recursive: true, force: true }); } catch (e) { }
+
+                await Build.updateOne({ buildId }, { status: 'failed', error: buildErrors || 'Unknown build error.' });
 
                 io.emit('buildProgress', {
                     buildId,
@@ -225,6 +239,8 @@ exports.startBuild = async (req, res) => {
             const outputExe = path.join(buildScriptDir, engineConfig.outputDir, engineConfig.outputFile);
             if (!fs.existsSync(outputExe)) {
                 try { fs.rmSync(buildScriptDir, { recursive: true, force: true }); } catch (e) { }
+
+                await Build.updateOne({ buildId }, { status: 'failed', error: 'Executable not found after build.' });
 
                 io.emit('buildProgress', {
                     buildId,
@@ -244,6 +260,8 @@ exports.startBuild = async (req, res) => {
 
             const stats = fs.statSync(finalExe);
 
+            await Build.updateOne({ buildId }, { status: 'success', fileSize: stats.size });
+
             io.emit('buildProgress', {
                 buildId,
                 progress: 100,
@@ -256,6 +274,8 @@ exports.startBuild = async (req, res) => {
 
     } catch (err) {
         try { fs.rmSync(buildScriptDir, { recursive: true, force: true }); } catch (e) { }
+
+        await Build.updateOne({ buildId }, { status: 'failed', error: err.message });
 
         io.emit('buildProgress', {
             buildId,
