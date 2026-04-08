@@ -6,6 +6,25 @@ import io from 'socket.io-client';
 import config from '@/config.json';
 
 const socketInstance = { current: null };
+const userPrefs = { current: null };
+
+export const updateNotifPrefs = (notifications) => {
+  if (userPrefs.current) {
+    userPrefs.current.notifications = notifications;
+  } else {
+    userPrefs.current = { notifications };
+  }
+};
+
+const fetchUserPrefs = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${config.BASE_API}/v${config.API_VERSION}/users/@me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) userPrefs.current = await res.json();
+  } catch (e) {}
+};
 
 export default function BottomNav() {
   const navigate = useNavigate();
@@ -16,6 +35,8 @@ export default function BottomNav() {
     if (initialized.current) return;
     initialized.current = true;
 
+    fetchUserPrefs();
+
     if (!socketInstance.current) {
       socketInstance.current = io(config.BASE_API.replace('/api', ''), {
         transports: ['websocket', 'polling']
@@ -23,6 +44,7 @@ export default function BottomNav() {
     }
 
     socketInstance.current.on('newConnection', (data) => {
+      if (userPrefs.current?.notifications?.connectionAlerts === false) return;
       toast.success('New device connected', {
         description: data?.deviceInfo || data?.ip || 'A new device is now online',
       });
@@ -31,6 +53,7 @@ export default function BottomNav() {
     socketInstance.current.on('buildProgress', (data) => {
       if (data.progress === 100) {
         if (data.success) {
+          if (userPrefs.current?.notifications?.buildNotifications === false) return;
           toast.success('Build completed', {
             description: data.fileName || 'Your executable is ready to download',
           });
