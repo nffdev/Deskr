@@ -141,6 +141,7 @@
     <ClCompile Include="services\connection.cpp" />
     <ClCompile Include="services\heartbeat.cpp" />
     <ClCompile Include="services\ip_service.cpp" />
+    <ClCompile Include="services\ScreenCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helpers\constants.h" />
@@ -151,6 +152,7 @@
     <ClInclude Include="services\connection.h" />
     <ClInclude Include="services\heartbeat.h" />
     <ClInclude Include="services\ip_service.h" />
+    <ClInclude Include="services\ScreenCapture.h" />
     <ClInclude Include="utils\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
