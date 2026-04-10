@@ -248,6 +248,21 @@ export default function Remote() {
     }).catch(() => {});
   };
 
+  const sendVirtualKey = (key, code) => {
+    if (!connected || !selectedDevice) return;
+    const token = localStorage.getItem('token');
+    const post = (type) => fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ type, key, code })
+    }).catch(() => {});
+    post('keyDown');
+    setTimeout(() => post('keyUp'), 30);
+  };
+
   useEffect(() => {
     if (!connected || !showKeyboard) return;
     const onKeyDown = (e) => sendKeyEvent('keyDown', e);
@@ -511,24 +526,84 @@ export default function Remote() {
               <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl p-2 sm:p-3">
                 <div className="space-y-1.5">
                   {[
-                    ['Esc', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Del'],
-                    ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-                    ['Caps', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Enter'],
-                    ['Shift', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/'],
-                    ['Ctrl', 'Win', 'Alt', 'Space', 'Alt', 'Ctrl'],
+                    [
+                      { id: 'Escape', label: 'Esc', key: 'Escape', code: 'Escape' },
+                      { id: 'Digit1', label: '1', key: '1', code: 'Digit1' },
+                      { id: 'Digit2', label: '2', key: '2', code: 'Digit2' },
+                      { id: 'Digit3', label: '3', key: '3', code: 'Digit3' },
+                      { id: 'Digit4', label: '4', key: '4', code: 'Digit4' },
+                      { id: 'Digit5', label: '5', key: '5', code: 'Digit5' },
+                      { id: 'Digit6', label: '6', key: '6', code: 'Digit6' },
+                      { id: 'Digit7', label: '7', key: '7', code: 'Digit7' },
+                      { id: 'Digit8', label: '8', key: '8', code: 'Digit8' },
+                      { id: 'Digit9', label: '9', key: '9', code: 'Digit9' },
+                      { id: 'Digit0', label: '0', key: '0', code: 'Digit0' },
+                      { id: 'Delete', label: 'Del', key: 'Delete', code: 'Delete' },
+                    ],
+                    [
+                      { id: 'Tab', label: 'Tab', key: 'Tab', code: 'Tab' },
+                      { id: 'KeyQ', label: 'Q', key: 'q', code: 'KeyQ' },
+                      { id: 'KeyW', label: 'W', key: 'w', code: 'KeyW' },
+                      { id: 'KeyE', label: 'E', key: 'e', code: 'KeyE' },
+                      { id: 'KeyR', label: 'R', key: 'r', code: 'KeyR' },
+                      { id: 'KeyT', label: 'T', key: 't', code: 'KeyT' },
+                      { id: 'KeyY', label: 'Y', key: 'y', code: 'KeyY' },
+                      { id: 'KeyU', label: 'U', key: 'u', code: 'KeyU' },
+                      { id: 'KeyI', label: 'I', key: 'i', code: 'KeyI' },
+                      { id: 'KeyO', label: 'O', key: 'o', code: 'KeyO' },
+                      { id: 'KeyP', label: 'P', key: 'p', code: 'KeyP' },
+                    ],
+                    [
+                      { id: 'CapsLock', label: 'Caps', key: 'CapsLock', code: 'CapsLock' },
+                      { id: 'KeyA', label: 'A', key: 'a', code: 'KeyA' },
+                      { id: 'KeyS', label: 'S', key: 's', code: 'KeyS' },
+                      { id: 'KeyD', label: 'D', key: 'd', code: 'KeyD' },
+                      { id: 'KeyF', label: 'F', key: 'f', code: 'KeyF' },
+                      { id: 'KeyG', label: 'G', key: 'g', code: 'KeyG' },
+                      { id: 'KeyH', label: 'H', key: 'h', code: 'KeyH' },
+                      { id: 'KeyJ', label: 'J', key: 'j', code: 'KeyJ' },
+                      { id: 'KeyK', label: 'K', key: 'k', code: 'KeyK' },
+                      { id: 'KeyL', label: 'L', key: 'l', code: 'KeyL' },
+                      { id: 'Enter', label: 'Enter', key: 'Enter', code: 'Enter' },
+                    ],
+                    [
+                      { id: 'ShiftLeft', label: 'Shift', key: 'Shift', code: 'ShiftLeft' },
+                      { id: 'KeyZ', label: 'Z', key: 'z', code: 'KeyZ' },
+                      { id: 'KeyX', label: 'X', key: 'x', code: 'KeyX' },
+                      { id: 'KeyC', label: 'C', key: 'c', code: 'KeyC' },
+                      { id: 'KeyV', label: 'V', key: 'v', code: 'KeyV' },
+                      { id: 'KeyB', label: 'B', key: 'b', code: 'KeyB' },
+                      { id: 'KeyN', label: 'N', key: 'n', code: 'KeyN' },
+                      { id: 'KeyM', label: 'M', key: 'm', code: 'KeyM' },
+                      { id: 'Comma', label: ',', key: ',', code: 'Comma' },
+                      { id: 'Period', label: '.', key: '.', code: 'Period' },
+                      { id: 'Slash', label: '/', key: '/', code: 'Slash' },
+                    ],
+                    [
+                      { id: 'ControlLeft', label: 'Ctrl', key: 'Control', code: 'ControlLeft' },
+                      { id: 'MetaLeft', label: 'Win', key: 'Meta', code: 'MetaLeft' },
+                      { id: 'AltLeft', label: 'Alt', key: 'Alt', code: 'AltLeft' },
+                      { id: 'Space', label: 'Space', key: ' ', code: 'Space' },
+                      { id: 'AltRight', label: 'Alt', key: 'Alt', code: 'AltRight' },
+                      { id: 'ControlRight', label: 'Ctrl', key: 'Control', code: 'ControlRight' },
+                    ],
                   ].map((row, i) => (
                     <div key={i} className="flex gap-1 justify-center">
-                      {row.map((key) => (
-                        <button
-                          key={key}
-                          className={`${
-                            key === 'Space' ? 'flex-1 max-w-[200px]' :
-                            ['Shift', 'Enter', 'Caps', 'Tab', 'Ctrl', 'Alt', 'Win', 'Del', 'Esc'].includes(key) ? 'px-2 sm:px-3' : 'w-7 sm:w-8'
-                          } h-8 sm:h-9 bg-gray-800/60 border border-white/[0.06] rounded-md text-[10px] sm:text-xs text-gray-300 font-medium hover:bg-gray-700/60 hover:border-purple-500/30 active:bg-purple-500/20 transition-colors flex items-center justify-center`}
-                        >
-                          {key}
-                        </button>
-                      ))}
+                      {row.map((k) => {
+                        const isWide = ['Space', 'Escape', 'Delete', 'Tab', 'CapsLock', 'Enter', 'ShiftLeft', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft'].includes(k.id);
+                        return (
+                          <button
+                            key={k.id}
+                            onClick={() => sendVirtualKey(k.key, k.code)}
+                            className={`${
+                              k.id === 'Space' ? 'flex-1 max-w-[200px]' :
+                              isWide ? 'px-2 sm:px-3' : 'w-7 sm:w-8'
+                            } h-8 sm:h-9 bg-gray-800/60 border border-white/[0.06] rounded-md text-[10px] sm:text-xs text-gray-300 font-medium hover:bg-gray-700/60 hover:border-purple-500/30 active:bg-purple-500/20 transition-colors flex items-center justify-center`}
+                          >
+                            {k.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
