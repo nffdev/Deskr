@@ -248,10 +248,13 @@ export default function Remote() {
     }).catch(() => {});
   };
 
-  const sendVirtualKey = (key, code) => {
-    if (!connected || !selectedDevice) return;
+  const [stickyMods, setStickyMods] = useState({});
+  const MOD_KEYS = ['ShiftLeft', 'ControlLeft', 'AltLeft', 'MetaLeft', 'ShiftRight', 'ControlRight', 'AltRight'];
+
+  const postKey = async (type, key, code) => {
+    if (!selectedDevice) return;
     const token = localStorage.getItem('token');
-    const post = (type) => fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
+    await fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -259,8 +262,38 @@ export default function Remote() {
       },
       body: JSON.stringify({ type, key, code })
     }).catch(() => {});
-    post('keyDown');
-    setTimeout(() => post('keyUp'), 30);
+  };
+
+  const sendVirtualKey = async (key, code) => {
+    if (!connected || !selectedDevice) return;
+
+    if (MOD_KEYS.includes(code)) {
+      const isActive = stickyMods[code];
+      if (isActive) {
+        await postKey('keyUp', key, code);
+        setStickyMods((prev) => {
+          const next = { ...prev };
+          delete next[code];
+          return next;
+        });
+      } else {
+        await postKey('keyDown', key, code);
+        setStickyMods((prev) => ({ ...prev, [code]: { key, code } }));
+      }
+      return;
+    }
+
+    await postKey('keyDown', key, code);
+    await new Promise((r) => setTimeout(r, 30));
+    await postKey('keyUp', key, code);
+
+    const active = Object.values(stickyMods);
+    if (active.length > 0) {
+      for (const m of active) {
+        await postKey('keyUp', m.key, m.code);
+      }
+      setStickyMods({});
+    }
   };
 
   useEffect(() => {
@@ -591,6 +624,7 @@ export default function Remote() {
                     <div key={i} className="flex gap-1 justify-center">
                       {row.map((k) => {
                         const isWide = ['Space', 'Escape', 'Delete', 'Tab', 'CapsLock', 'Enter', 'ShiftLeft', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft'].includes(k.id);
+                        const isModActive = !!stickyMods[k.code];
                         return (
                           <button
                             key={k.id}
@@ -598,7 +632,7 @@ export default function Remote() {
                             className={`${
                               k.id === 'Space' ? 'flex-1 max-w-[200px]' :
                               isWide ? 'px-2 sm:px-3' : 'w-7 sm:w-8'
-                            } h-8 sm:h-9 bg-gray-800/60 border border-white/[0.06] rounded-md text-[10px] sm:text-xs text-gray-300 font-medium hover:bg-gray-700/60 hover:border-purple-500/30 active:bg-purple-500/20 transition-colors flex items-center justify-center`}
+                            } h-8 sm:h-9 ${isModActive ? 'bg-purple-500/30 border-purple-500/50 text-purple-200' : 'bg-gray-800/60 border-white/[0.06] text-gray-300'} border rounded-md text-[10px] sm:text-xs font-medium hover:bg-gray-700/60 hover:border-purple-500/30 active:bg-purple-500/20 transition-colors flex items-center justify-center`}
                           >
                             {k.label}
                           </button>
