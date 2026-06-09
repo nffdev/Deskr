@@ -18,9 +18,8 @@ export const updateNotifPrefs = (notifications) => {
 
 const fetchUserPrefs = async () => {
   try {
-    const token = localStorage.getItem('token');
     const res = await fetch(`${config.BASE_API}/v${config.API_VERSION}/users/@me`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     if (res.ok) userPrefs.current = await res.json();
   } catch (e) {}
@@ -39,7 +38,8 @@ export default function BottomNav() {
 
     if (!socketInstance.current) {
       socketInstance.current = io(config.BASE_API.replace('/api', ''), {
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        withCredentials: true
       });
     }
 

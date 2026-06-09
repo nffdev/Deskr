@@ -36,7 +36,8 @@ export default function Builder() {
 
   useEffect(() => {
     const socket = io(BASE_API.replace('/api', ''), {
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      withCredentials: true
     });
     socketRef.current = socket;
 
@@ -81,13 +82,10 @@ export default function Builder() {
       const base64 = e.target.result.split(',')[1];
       const iconId = Date.now().toString(16);
       try {
-        const token = localStorage.getItem('token');
         await fetch(`${BASE_API}/v${API_VERSION}/build/upload/icon`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` })
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: iconId, data: base64 })
         });
         manageConfigChange('iconId', iconId);
@@ -110,13 +108,10 @@ export default function Builder() {
     setBuildStatus({ progress: 0, message: 'Initialisation du build...', error: null, buildTime: null, fileSize: null, fileName: null, success: null });
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`${BASE_API}/v${API_VERSION}/build`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           appName: buildConfig.appName,
           language: buildConfig.language,
@@ -142,9 +137,8 @@ export default function Builder() {
   };
 
   const downloadBuild = async () => {
-    const token = localStorage.getItem('token');
     const response = await fetch(`${BASE_API}/v${API_VERSION}/build/download?buildId=${buildIdRef.current}&appName=${encodeURIComponent(buildConfig.appName)}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);

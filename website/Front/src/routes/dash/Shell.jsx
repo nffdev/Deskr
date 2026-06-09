@@ -25,7 +25,7 @@ export default function Shell() {
   useEffect(() => {
     fetchDevices();
 
-    const socket = io(API_URL.split('/api')[0]);
+    const socket = io(API_URL.split('/api')[0], { withCredentials: true });
     socketRef.current = socket;
 
     socket.on('shellOutput', (data) => {
@@ -59,9 +59,8 @@ export default function Shell() {
 
   const fetchDevices = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/connections/recent`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
       });
       const data = await res.json();
       setDevices(data.filter(d => d.isActive));
@@ -72,7 +71,6 @@ export default function Shell() {
     if (!command.trim() || !selectedDevice) return;
 
     const commandId = Date.now().toString();
-    const token = localStorage.getItem('token');
 
     setHistory(prev => [...prev, { type: 'command', text: command }]);
     setCmdHistory(prev => [command, ...prev]);
@@ -81,10 +79,8 @@ export default function Shell() {
     try {
       await fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'shell', command, commandId })
       });
     } catch (e) {

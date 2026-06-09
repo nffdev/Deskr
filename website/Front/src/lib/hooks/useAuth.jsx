@@ -10,45 +10,39 @@ export function useAuth() {
 }
 
 export function AuthWrapper({ children }) {
-	const [isLoading, setIsLoading] = useState(false);
+	const [checked, setChecked] = useState(false);
 	const { user, updateUser } = useAuth();
 	const location = useLocation();
 
-	const auth = localStorage.getItem('token');
-
 	useEffect(() => {
-		if (!location.pathname.startsWith('/dash/dashboard') || !auth || (user && user.id)) return;
-		setIsLoading(true);
-
-		async function getUser() {
-			const data = await fetch(`${BASE_API}/v${API_VERSION}/users/@me`, { method: 'GET', headers: { 'Authorization': `Bearer ${auth}` } }).then(response => response.json()).catch(() => null);
-
-			if (data?.id) {
-				updateUser(data);
-			}
-			setIsLoading(false);
+		let cancelled = false;
+		async function probe() {
+			try {
+				const res = await fetch(`${BASE_API}/v${API_VERSION}/users/@me`, {
+					method: 'GET',
+					credentials: 'include'
+				});
+				if (!cancelled && res.ok) {
+					const data = await res.json();
+					if (data?.id) updateUser(data);
+				}
+			} catch {}
+			if (!cancelled) setChecked(true);
 		}
+		probe();
+		return () => { cancelled = true; };
+	}, []);
 
-		getUser();
-	}, [location.pathname]);
+	if (!checked) return <FullPageLoader />;
 
-	if (location.pathname.startsWith('/auth/') && auth) return <Navigate to="/dash/dashboard" replace />;
+	const isAuthed = !!(user && user.id);
+
+	if (location.pathname.startsWith('/auth/') && isAuthed) {
+		return <Navigate to="/dash/dashboard" replace />;
+	}
 
 	if (!location.pathname.startsWith('/dash/dashboard')) return <>{children}</>;
-	if (user && user.id) return <>{children}</>;
-	if (!auth) return <Login />;
 
-	return isLoading ? <FullPageLoader /> : user ? <>{children}</> : <Login />;
-}
-
-function Layout({ children }) {
-	return <>
-		{/* <Header /> */}
-        <div className="flex">
-			{/* <Sidebar /> */}
-			<div className="flex items-center justify-between w-full h-full">
-				{children}
-			</div>
-		</div>
-	</>
+	if (isAuthed) return <>{children}</>;
+	return <Login />;
 }
