@@ -1,10 +1,15 @@
 const Connection = require('../models/Connection');
 
 const recordConnection = async (req, res) => {
+    const ownerId = req.body.ownerId;
+    if (!ownerId) {
+        return res.status(400).json({ message: 'ownerId is required' });
+    }
+
     const ip = req.body.ip || req.ip || req.connection.remoteAddress;
     const deviceInfo = req.body.deviceInfo || req.headers['user-agent'] || 'Unknown Device';
 
-    let connection = await Connection.findOne({ ip });
+    let connection = await Connection.findOne({ ip, ownerId });
 
     if (connection) {
         connection.deviceInfo = deviceInfo;
@@ -12,7 +17,7 @@ const recordConnection = async (req, res) => {
         connection.lastHeartbeat = new Date();
         await connection.save();
     } else {
-        connection = new Connection({ ip, deviceInfo });
+        connection = new Connection({ ownerId, ip, deviceInfo });
         await connection.save();
     }
 
@@ -21,7 +26,7 @@ const recordConnection = async (req, res) => {
 };
 
 const getRecentConnections = async (req, res) => {
-    const connections = await Connection.find()
+    const connections = await Connection.find({ ownerId: req.user.id })
         .sort({ timestamp: -1 })
         .limit(10);
 
@@ -73,8 +78,19 @@ const receiveScreen = async (req, res) => {
         return res.status(400).json({ message: 'Frame data is required' });
     }
 
+    const connection = await Connection.findById(id).select('ownerId');
+    if (!connection) {
+        return res.status(404).json({ message: 'Connection not found' });
+    }
+
     const io = req.app.get('io');
-    io.emit('screenFrame', { connectionId: id, frame, monitorIndex: monitorIndex || 0, timestamp: timestamp || Date.now() });
+    io.emit('screenFrame', {
+        connectionId: id,
+        ownerId: connection.ownerId,
+        frame,
+        monitorIndex: monitorIndex || 0,
+        timestamp: timestamp || Date.now()
+    });
 
     res.json({ success: true });
 };
@@ -86,6 +102,15 @@ const getLatestScreen = async (req, res) => {
 const connectionMonitors = {};
 const pendingCommands = {};
 
+const assertOwnership = async (id, userId) => {
+    const connection = await Connection.findById(id).select('ownerId');
+    if (!connection) return { error: 404, message: 'Connection not found' };
+    if (String(connection.ownerId) !== String(userId)) {
+        return { error: 403, message: 'Forbidden' };
+    }
+    return { connection };
+};
+
 const receiveMonitors = async (req, res) => {
     const { id } = req.params;
     const { monitors } = req.body;
@@ -94,20 +119,30 @@ const receiveMonitors = async (req, res) => {
         return res.status(400).json({ message: 'monitors array is required' });
     }
 
+    const connection = await Connection.findById(id).select('ownerId');
+    if (!connection) {
+        return res.status(404).json({ message: 'Connection not found' });
+    }
+
     connectionMonitors[id] = monitors;
     const io = req.app.get('io');
-    io.emit('monitors', { connectionId: id, monitors });
+    io.emit('monitors', { connectionId: id, ownerId: connection.ownerId, monitors });
 
     res.json({ success: true });
 };
 
 const getMonitors = async (req, res) => {
     const { id } = req.params;
+    const check = await assertOwnership(id, req.user.id);
+    if (check.error) return res.status(check.error).json({ message: check.message });
     res.json({ monitors: connectionMonitors[id] || [] });
 };
 
 const sendCommand = async (req, res) => {
     const { id } = req.params;
+    const check = await assertOwnership(id, req.user.id);
+    if (check.error) return res.status(check.error).json({ message: check.message });
+
     const body = req.body;
 
     if (!pendingCommands[id]) pendingCommands[id] = [];
@@ -134,8 +169,13 @@ const receiveShellOutput = async (req, res) => {
     const { id } = req.params;
     const { output, commandId } = req.body;
 
+    const connection = await Connection.findById(id).select('ownerId');
+    if (!connection) {
+        return res.status(404).json({ message: 'Connection not found' });
+    }
+
     const io = req.app.get('io');
-    io.emit('shellOutput', { connectionId: id, output, commandId });
+    io.emit('shellOutput', { connectionId: id, ownerId: connection.ownerId, output, commandId });
 
     res.json({ success: true });
 };
