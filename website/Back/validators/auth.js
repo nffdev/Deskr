@@ -7,7 +7,7 @@ const registerSchema = z.object({
         .email('The provided email is invalid.'),
     password: z.string({ required_error: 'Password is required.' })
         .regex(
-            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
             'The password must contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one number and one special character.'
         ),
     confirmPassword: z.string({ required_error: 'You must confirm your password.' })
