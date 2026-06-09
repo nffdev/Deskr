@@ -38,9 +38,8 @@ export default function Remote() {
 
   const fetchDevices = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/connections/recent`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -66,7 +65,8 @@ export default function Remote() {
 
   useEffect(() => {
     const socket = io(config.BASE_API.replace('/api', ''), {
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      withCredentials: true
     });
     socketRef.current = socket;
 
@@ -108,9 +108,8 @@ export default function Remote() {
 
   const fetchMonitors = async (deviceId) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/connections/${deviceId}/monitors`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -135,13 +134,10 @@ export default function Remote() {
     setShowMonitorPicker(false);
     setScreenFrame(null);
     try {
-      const token = localStorage.getItem('token');
       await fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'switchMonitor', monitorIndex: index })
       });
     } catch (err) {
@@ -159,11 +155,10 @@ export default function Remote() {
     setMonitors([]);
     setActiveMonitor(0);
 
-    const token = localStorage.getItem('token');
     for (let i = 0; i < 15; i++) {
       try {
         const res = await fetch(`${API_BASE}/connections/${device._id}/monitors`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         });
         if (res.ok) {
           const data = await res.json();
@@ -223,13 +218,10 @@ export default function Remote() {
     const x = Math.round(relX * screenW);
     const y = Math.round(relY * screenH);
 
-    const token = localStorage.getItem('token');
     fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, x, y, button: e.button || 0 })
     }).catch(() => {});
   };
@@ -237,13 +229,10 @@ export default function Remote() {
   const sendKeyEvent = (type, e) => {
     if (!connected || !selectedDevice || !showKeyboard) return;
     e.preventDefault();
-    const token = localStorage.getItem('token');
     fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, key: e.key, code: e.code })
     }).catch(() => {});
   };
@@ -253,13 +242,10 @@ export default function Remote() {
 
   const postKey = async (type, key, code) => {
     if (!selectedDevice) return;
-    const token = localStorage.getItem('token');
     await fetch(`${API_BASE}/connections/${selectedDevice._id}/command`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, key, code })
     }).catch(() => {});
   };

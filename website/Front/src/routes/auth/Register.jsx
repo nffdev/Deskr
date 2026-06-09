@@ -20,13 +20,13 @@ export default function Register() {
         setError('');
         fetch(`${BASE_API}/v${API_VERSION}/auth/register`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datas)
         })
-            .then(response => response.json())
-            .then(json => {
-                if (json.token) {
-                    localStorage.setItem('token', json.token);
+            .then(response => response.json().then(json => ({ ok: response.ok, json })))
+            .then(({ ok, json }) => {
+                if (ok && json.success) {
                     window.location.replace('/dash/dashboard');
                 } else {
                     setError(json.message || 'An error occured.');

@@ -22,7 +22,7 @@ export default function Dashboard() {
 
     fetchConnections();
 
-    const socket = io(API_URL.split('/api')[0]);
+    const socket = io(API_URL.split('/api')[0], { withCredentials: true });
     socket.on('newConnection', (connection) => {
       if (!user || String(connection.ownerId) !== String(user.id)) return;
       setConnections(prev => [connection, ...prev].slice(0, 10));
@@ -39,9 +39,8 @@ export default function Dashboard() {
 
   const fetchConnections = async () => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/connections/recent`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();

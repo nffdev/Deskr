@@ -9,12 +9,11 @@ import { BASE_API, API_VERSION } from "../../config.json";
 import { updateNotifPrefs } from "@/components/nav/BottomNav";
 
 const api = (path, options = {}) => {
-  const token = localStorage.getItem('token');
   return fetch(`${BASE_API}/v${API_VERSION}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers
     }
   });
@@ -77,8 +76,10 @@ export default function Settings() {
     setStorageLoading(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
+    try {
+      await api('/auth/logout', { method: 'POST' });
+    } catch (e) {}
     window.location.replace('/auth/login');
   };
 
