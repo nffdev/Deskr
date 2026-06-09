@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const connectionSchema = new mongoose.Schema({
+    ownerId: {
+        type: String,
+        required: true,
+        index: true
+    },
     ip: {
         type: String,
         required: true
