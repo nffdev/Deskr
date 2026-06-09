@@ -24,16 +24,18 @@ export default function Dashboard() {
 
     const socket = io(API_URL.split('/api')[0]);
     socket.on('newConnection', (connection) => {
+      if (!user || String(connection.ownerId) !== String(user.id)) return;
       setConnections(prev => [connection, ...prev].slice(0, 10));
     });
     socket.on('connectionUpdated', (updatedConnection) => {
+      if (!user || String(updatedConnection.ownerId) !== String(user.id)) return;
       setConnections(prev => prev.map(conn =>
         conn._id === updatedConnection._id ? updatedConnection : conn
       ));
     });
 
     return () => socket.disconnect();
-  }, []);
+  }, [user]);
 
   const fetchConnections = async () => {
     try {
