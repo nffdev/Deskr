@@ -141,6 +141,11 @@ export default function Home() {
                         <Monitor className="w-4 h-4 text-gray-600" />
                         <span className="text-sm text-gray-600">Deskr</span>
                     </div>
+                    <div className="flex items-center gap-4 text-xs text-gray-600">
+                        <a href="/legal/notice" className="hover:text-gray-300">Legal Notice</a>
+                        <a href="/legal/terms" className="hover:text-gray-300">Terms</a>
+                        <a href="/legal/privacy" className="hover:text-gray-300">Privacy</a>
+                    </div>
                     <p className="text-xs text-gray-600">Built with purpose. Open source.</p>
                 </div>
             </footer>
