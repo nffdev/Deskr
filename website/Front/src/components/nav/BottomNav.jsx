@@ -44,6 +44,8 @@ export default function BottomNav() {
     }
 
     socketInstance.current.on('newConnection', (data) => {
+      const myId = userPrefs.current?.id;
+      if (!myId || String(data?.ownerId) !== String(myId)) return;
       if (userPrefs.current?.notifications?.connectionAlerts === false) return;
       toast.success('New device connected', {
         description: data?.deviceInfo || data?.ip || 'A new device is now online',
