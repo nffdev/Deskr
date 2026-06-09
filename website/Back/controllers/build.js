@@ -159,7 +159,8 @@ exports.startBuild = async (req, res) => {
 
         const configFilePath = path.join(buildScriptDir, template.configFile);
         injectConfig(configFilePath, {
-            '%BASE_API%': apiUrl
+            '%BASE_API%': apiUrl,
+            '%OWNER_ID%': String(req.user.id)
         });
 
         writeConfigFile(buildId, { appName, description, copyright, version, icon, apiUrl, language });
