@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
@@ -9,9 +10,11 @@ const app = express();
 app.disable('x-powered-by');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json({ limit: '500mb' }));
+app.use(cookieParser());
 
 app.use(cors({
-    origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:5173'],
+    origin: (origin, cb) => cb(null, origin || true),
+    credentials: true,
     methods: ['GET', 'POST', 'PUT']
 }));
 
@@ -24,7 +27,8 @@ const { Server } = require('socket.io');
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:5173'],
+        origin: (origin, cb) => cb(null, origin || true),
+        credentials: true,
         methods: ['GET', 'POST']
     }
 });
