@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const router = Router();
 
-const { getMe, changePassword, updateAccount, updateNotifications, getStorage, clearStorage } = require('../controllers/users');
+const { getMe, changePassword, updateAccount, updateNotifications, getStorage, clearStorage, deleteAccount } = require('../controllers/users');
 const authMiddleware = require('../middleware/auth');
 const { asyncHandler } = require('../utils');
 
@@ -11,5 +11,6 @@ router.put('/account', authMiddleware, asyncHandler(updateAccount));
 router.put('/notifications', authMiddleware, asyncHandler(updateNotifications));
 router.get('/storage', authMiddleware, asyncHandler(getStorage));
 router.delete('/storage', authMiddleware, asyncHandler(clearStorage));
+router.delete('/@me', authMiddleware, asyncHandler(deleteAccount));
 
 module.exports = router;

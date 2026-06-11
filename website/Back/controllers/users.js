@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const path = require('path');
 const fs = require('fs');
 const User = require('../models/User');
+const Connection = require('../models/Connection');
+const Build = require('../models/Build');
 
 const getMe = async (req, res) => {
     return res.status(200).json(req.user);
@@ -121,11 +123,37 @@ const clearStorage = async (req, res) => {
     return res.json({ message: 'Storage cleared.' });
 };
 
+const deleteAccount = async (req, res) => {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ message: 'Password is required to delete the account.' });
+
+    const user = await User.findOne({ id: req.user.id });
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    if (!bcrypt.compareSync(password, user.password)) {
+        return res.status(400).json({ message: 'Password is incorrect.' });
+    }
+
+    await Connection.deleteMany({ ownerId: user.id });
+    await Build.deleteMany({ userId: user.id });
+    await User.deleteOne({ id: user.id });
+
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        path: '/'
+    });
+
+    return res.json({ success: true });
+};
+
 module.exports = {
     getMe,
     changePassword,
     updateAccount,
     updateNotifications,
     getStorage,
-    clearStorage
+    clearStorage,
+    deleteAccount
 };
