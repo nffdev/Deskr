@@ -5,6 +5,15 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import BottomNav from "@/components/nav/BottomNav";
 import { Settings as SettingsIcon, User, Lock, LogOut, ChevronRight, Mail, Shield, Bell, Palette, HardDrive, Save, Trash2, Loader2, Check } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { BASE_API, API_VERSION } from "../../config.json";
 import { updateNotifPrefs } from "@/components/nav/BottomNav";
 
@@ -39,6 +48,11 @@ export default function Settings() {
   const [storage, setStorage] = useState({ used: 0, limit: 100 * 1024 * 1024 });
   const [storageLoading, setStorageLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -81,6 +95,24 @@ export default function Settings() {
       await api('/auth/logout', { method: 'POST' });
     } catch (e) {}
     window.location.replace('/auth/login');
+  };
+
+  const manageDeleteAccount = async () => {
+    setDeleteError('');
+    if (!deletePassword) return setDeleteError('Password is required.');
+    setDeleting(true);
+    try {
+      const res = await api('/users/@me', {
+        method: 'DELETE',
+        body: JSON.stringify({ password: deletePassword })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete account.');
+      window.location.replace('/');
+    } catch (err) {
+      setDeleteError(err.message);
+      setDeleting(false);
+    }
   };
 
   const manageChangePassword = async () => {
@@ -249,6 +281,22 @@ export default function Settings() {
                 <p className="text-[10px] sm:text-xs text-gray-500">Sign out of your account</p>
               </div>
             </button>
+
+            <div className="mt-6 pt-4 border-t border-white/[0.06]">
+              <p className="text-[11px] uppercase tracking-wider text-red-400/70 mb-2 px-1">Danger zone</p>
+              <button
+                onClick={() => { setDeletePassword(''); setDeleteError(''); setDeleteOpen(true); }}
+                className="w-full bg-red-500/[0.04] border border-red-500/20 rounded-xl p-3.5 sm:p-4 flex items-center gap-3 hover:border-red-500/40 hover:bg-red-500/[0.07] transition-all group"
+              >
+                <div className="w-9 h-9 bg-red-500/10 rounded-lg flex items-center justify-center shrink-0">
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm sm:text-base text-red-400 font-medium">Delete account</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">Permanently remove your account and data</p>
+                </div>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
@@ -427,6 +475,64 @@ export default function Settings() {
       </div>
 
       <BottomNav />
+
+      <Dialog open={deleteOpen} onOpenChange={(o) => !deleting && setDeleteOpen(o)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-400">
+              <Trash2 className="w-5 h-5" />
+              Delete account
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently remove your account, all your built clients and connection records. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-400">Enter your password to confirm</label>
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              placeholder="••••••••"
+              className={inputClass}
+              autoFocus
+            />
+            {deleteError && (
+              <p className="text-xs text-red-400">{deleteError}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleting}
+              className="text-gray-300 hover:bg-white/[0.04] hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={manageDeleteAccount}
+              disabled={deleting}
+              className="bg-red-500 hover:bg-red-500/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete account
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
