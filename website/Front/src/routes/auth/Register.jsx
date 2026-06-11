@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, Monitor, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { BASE_API, API_VERSION } from "../../config.json";
 
 export default function Register() {
     const [datas, setDatas] = useState({ username: '', email: '', password: '', confirmPassword: '' });
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [focused, setFocused] = useState(null);
@@ -15,6 +17,7 @@ export default function Register() {
         if (!datas.password) return setError('Password is required.');
         if (!datas.confirmPassword) return setError('Please confirm your password.');
         if (datas.password !== datas.confirmPassword) return setError('Passwords are not matching.');
+        if (!acceptedTerms) return setError('You must accept the Terms and Privacy Policy.');
 
         setLoading(true);
         setError('');
@@ -108,10 +111,25 @@ export default function Register() {
                         ))}
                     </div>
 
+                    <div className="mt-5 flex items-start gap-2.5">
+                        <Checkbox
+                            id="accept-terms"
+                            checked={acceptedTerms}
+                            onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                            className="mt-0.5 border-white/[0.15] data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                        />
+                        <label htmlFor="accept-terms" className="text-xs text-gray-400 leading-relaxed cursor-pointer select-none">
+                            I have read and agree to the{' '}
+                            <Link to="/legal/terms" target="_blank" className="text-purple-400 hover:text-purple-300 underline-offset-2 hover:underline">Terms</Link>
+                            {' '}and the{' '}
+                            <Link to="/legal/privacy" target="_blank" className="text-purple-400 hover:text-purple-300 underline-offset-2 hover:underline">Privacy Policy</Link>.
+                        </label>
+                    </div>
+
                     <button
                         onClick={register}
-                        disabled={loading}
-                        className="group w-full mt-6 relative overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 to-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={loading || !acceptedTerms}
+                        className="group w-full mt-5 relative overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 to-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <span className="relative z-10 flex items-center justify-center gap-2">
                             {loading ? (
