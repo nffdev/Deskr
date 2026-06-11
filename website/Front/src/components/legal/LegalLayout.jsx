@@ -24,7 +24,7 @@ export default function LegalLayout({ title, updatedAt, children }) {
                 <header className="mb-8">
                     <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{title}</h1>
                     {updatedAt && (
-                        <p className="text-xs text-gray-500 mt-2">Last updated: {updatedAt}</p>
+                        <p className="text-xs text-gray-400 mt-2">Last updated: {updatedAt}</p>
                     )}
                 </header>
 
@@ -32,10 +32,10 @@ export default function LegalLayout({ title, updatedAt, children }) {
                     {children}
                 </article>
 
-                <footer className="mt-12 pt-6 border-t border-white/[0.06] flex gap-4 text-xs text-gray-500">
-                    <Link to="/legal/notice" className="hover:text-gray-300">Legal Notice</Link>
-                    <Link to="/legal/terms" className="hover:text-gray-300">Terms</Link>
-                    <Link to="/legal/privacy" className="hover:text-gray-300">Privacy</Link>
+                <footer className="mt-12 pt-6 border-t border-white/[0.06] flex gap-4 text-xs text-gray-400">
+                    <Link to="/legal/notice" className="hover:text-white">Legal Notice</Link>
+                    <Link to="/legal/terms" className="hover:text-white">Terms</Link>
+                    <Link to="/legal/privacy" className="hover:text-white">Privacy</Link>
                 </footer>
             </main>
         </div>
