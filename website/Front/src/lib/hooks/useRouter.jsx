@@ -1,5 +1,7 @@
+import { lazy } from "react";
+
 export default function useRouter() {
-    const ROUTES = import.meta.glob('../../routes/**/*.jsx', { eager: true });
+    const ROUTES = import.meta.glob('../../routes/**/*.jsx');
 
     const routes = Object.keys(ROUTES).map((route) => {
         const path = route
@@ -8,8 +10,8 @@ export default function useRouter() {
           	.replace(/\.\/routes|index|\.jsx$/g, '')
           	.replace(/\[\.{3}.+\]/, '*')
           	.replace(/\[(.+)\]/, ':$1');
-      
-        return { path, component: ROUTES[route].default };
+
+        return { path, component: lazy(ROUTES[route]) };
     });
 
     return routes;
