@@ -92,22 +92,22 @@ export default function Dashboard() {
         backgroundSize: '32px 32px'
       }} />
 
-      <header className="relative z-10 p-4 sm:p-6 border-b border-white/[0.06]">
+      <header className="relative z-10 p-3 sm:p-4 border-b border-white/[0.06]">
         <div className="max-w-5xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center shrink-0">
-            <Monitor className="w-5 h-5 text-purple-400" />
+          <div className="w-9 h-9 bg-purple-500/20 rounded-xl flex items-center justify-center shrink-0">
+            <Monitor className="w-4 h-4 text-purple-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="font-semibold text-base sm:text-lg text-white truncate">{user?.username || 'Dashboard'}</h1>
+            <h1 className="font-semibold text-sm sm:text-base text-white truncate">{user?.username || 'Dashboard'}</h1>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Welcome back</span>
+              <span className="text-xs sm:text-sm text-gray-500">Welcome back</span>
               <span className="px-1.5 py-0.5 text-[10px] bg-purple-500/20 text-purple-300 rounded font-medium">Free</span>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+      <main className="relative z-10 max-w-5xl mx-auto p-3 sm:p-4 space-y-6">
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <StatCard label="Total" value={stats.total} icon={Monitor} accent="text-purple-400" />
           <StatCard label="Online" value={stats.online} icon={Wifi} accent="text-green-400" pulse={stats.online > 0} />
