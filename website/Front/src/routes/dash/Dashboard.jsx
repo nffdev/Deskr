@@ -7,6 +7,7 @@ import BottomNav from '@/components/nav/BottomNav';
 import StatCard from '@/components/dashboard/StatCard';
 import QuickAction from '@/components/dashboard/QuickAction';
 import ClientCard from '@/components/dashboard/ClientCard';
+import ClientCardSkeleton from '@/components/dashboard/ClientCardSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { timeAgo } from '@/lib/utils';
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [connections, setConnections] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -33,6 +35,8 @@ export default function Dashboard() {
         setConnections(await res.json());
       } catch (e) {
         console.error('Error fetching connections:', e);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -103,7 +107,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="relative z-10 max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+      <main className="relative z-10 max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <StatCard label="Total" value={stats.total} icon={Monitor} accent="text-purple-400" />
           <StatCard label="Online" value={stats.online} icon={Wifi} accent="text-green-400" pulse={stats.online > 0} />
@@ -133,7 +137,11 @@ export default function Dashboard() {
             />
           </div>
 
-          {connections.length === 0 ? (
+          {loading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => <ClientCardSkeleton key={i} />)}
+            </div>
+          ) : connections.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center p-10 bg-gray-900/40 backdrop-blur-sm border border-white/[0.06] rounded-2xl">
               <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-3">
                 <Monitor className="w-8 h-8 text-purple-400/70" />
@@ -156,7 +164,7 @@ export default function Dashboard() {
             </div>
           )}
         </section>
-      </div>
+      </main>
 
       <BottomNav />
     </div>

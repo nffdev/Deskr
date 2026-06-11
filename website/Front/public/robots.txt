@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /auth/
+Disallow: /dash/
+
+Sitemap: https://deskr.org/sitemap.xml
