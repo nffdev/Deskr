@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Monitor, Mail, Lock, ArrowRight } from "lucide-react";
+import { Loader2, Monitor, Mail, Lock, ArrowRight, ArrowLeft } from "lucide-react";
 
 import { BASE_API, API_VERSION } from "../../config.json";
 
@@ -50,6 +50,14 @@ export default function Login() {
                 backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
                 backgroundSize: '32px 32px'
             }} />
+
+            <Link
+                to="/"
+                className="absolute top-5 left-5 sm:top-6 sm:left-6 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+            </Link>
 
             <div className="relative z-10 w-full max-w-[420px] mx-4 sm:mx-6">
                 <div className="flex flex-col items-center mb-8 sm:mb-10">
