@@ -6,7 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 
-ConnectionResponse ConnectionService::Connect() {
+ConnectionResponse ConnectionService::Connect(Heartbeat::DisconnectCallback onDisconnected) {
     auto ip = _ipService.GetPublicIp();
     auto deviceInfo = SystemInfo::GetDeviceInfo();
 
@@ -31,9 +31,16 @@ ConnectionResponse ConnectionService::Connect() {
     result.timestamp = json["timestamp"];
     result.isActive = (json["isActive"] == "true");
 
-    _heartbeat = std::make_unique<Heartbeat>(result.id);
+    _heartbeat = std::make_unique<Heartbeat>(result.id, onDisconnected);
 
     return result;
+}
+
+void ConnectionService::StopHeartbeat() {
+    if (_heartbeat) {
+        _heartbeat->Stop();
+        _heartbeat.reset();
+    }
 }
 
 void ConnectionService::Disconnect(const std::string& connectionId) {
