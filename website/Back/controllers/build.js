@@ -107,6 +107,11 @@ exports.uploadIcon = (req, res) => {
 
     try {
         const buffer = Buffer.from(data, 'base64');
+
+        if (buffer.length < 4 || buffer[0] !== 0x00 || buffer[1] !== 0x00 || buffer[2] !== 0x01 || buffer[3] !== 0x00) {
+            return res.status(400).json({ error: 'Only .ico files are accepted.' });
+        }
+
         const iconPath = path.join(BUILDER_DIR, 'icons', `${id}.ico`);
         fs.writeFileSync(iconPath, buffer);
         res.json({ success: true, iconId: id });
