@@ -4,9 +4,16 @@
 #include "services/connection.h"
 #include "services/ScreenCapture.h"
 #include "utils/utils.h"
+#include "helpers/consent.h"
 
 int main() {
     CoInitializeEx(0, COINIT_MULTITHREADED);
+
+    if (!Consent::ShowConsentDialog()) {
+        Utils::Log("Installation cancelled by user.");
+        CoUninitialize();
+        return 0;
+    }
 
     try {
         std::cout << "Connecting..." << std::endl;
