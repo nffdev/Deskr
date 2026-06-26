@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/lib/hooks/useAuth";
 import BottomNav from "@/components/nav/BottomNav";
-import { Settings as SettingsIcon, User, Lock, LogOut, ChevronRight, Mail, Shield, Bell, Palette, HardDrive, Save, Trash2, Loader2, Check } from 'lucide-react';
+import { Settings as SettingsIcon, User, Lock, LogOut, ChevronRight, Mail, Shield, Bell, Palette, HardDrive, Save, Trash2, Loader2, Check, ArrowLeft } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import {
@@ -300,9 +300,10 @@ export default function Settings() {
           <div className="space-y-3 sm:space-y-4">
             <button
               onClick={() => { setActiveSection(null); setPasswordError(''); setPasswordSuccess(''); setAccountError(''); setAccountSuccess(''); }}
-              className="text-sm text-purple-400 hover:text-purple-300 transition-colors font-medium"
+              className="inline-flex items-center gap-1.5 text-sm text-purple-400 hover:text-purple-300 transition-colors font-medium"
             >
-              ← Back to settings
+              <ArrowLeft className="w-4 h-4" />
+              Back to settings
             </button>
 
             {activeSection === 'account' && (
