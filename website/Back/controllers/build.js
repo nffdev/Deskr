@@ -189,11 +189,21 @@ exports.startBuild = async (req, res) => {
         const iconDest = path.join(buildScriptDir, 'app.ico');
         const customIconSrc = icon && icon !== 'default' ? path.join(BUILDER_DIR, 'icons', `${icon}.ico`) : null;
         const defaultIconSrc = path.join(BUILDER_DIR, 'icons', 'default.ico');
+        let iconAvailable = false;
 
         if (customIconSrc && fs.existsSync(customIconSrc)) {
             fs.copyFileSync(customIconSrc, iconDest);
+            iconAvailable = true;
         } else if (fs.existsSync(defaultIconSrc)) {
             fs.copyFileSync(defaultIconSrc, iconDest);
+            iconAvailable = true;
+        }
+
+        if (language === 'cpp' && !iconAvailable) {
+            const rcPath = path.join(buildScriptDir, 'client.rc');
+            let rcContent = fs.readFileSync(rcPath, 'utf-8');
+            rcContent = rcContent.replace(/IDI_APPICON ICON "app\.ico"\n?/, '');
+            fs.writeFileSync(rcPath, rcContent);
         }
 
         io.emit('buildProgress', { buildId, progress: 15, message: 'Restoring packages...' });
