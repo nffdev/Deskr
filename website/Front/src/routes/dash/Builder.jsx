@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from "@/lib/hooks/useAuth";
 import BottomNav from "@/components/nav/BottomNav";
