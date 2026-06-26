@@ -74,6 +74,7 @@ export default function Builder() {
 
   const handleIconSelect = async (file) => {
     if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.ico')) return;
     const reader = new FileReader();
     reader.onload = async (e) => {
       setIconPreview(e.target.result);
@@ -255,7 +256,7 @@ export default function Builder() {
                   </button>
                   <p className="text-[10px] sm:text-xs text-gray-500 mt-1 ml-0.5">ICO format, 256x256px</p>
                 </div>
-                <input id="icon-upload" type="file" accept=".ico,.png" className="hidden" onChange={(e) => handleIconSelect(e.target.files[0])} />
+                <input id="icon-upload" type="file" accept=".ico" className="hidden" onChange={(e) => handleIconSelect(e.target.files[0])} />
               </div>
             </div>
 

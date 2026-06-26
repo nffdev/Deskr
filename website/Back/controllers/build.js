@@ -107,6 +107,11 @@ exports.uploadIcon = (req, res) => {
 
     try {
         const buffer = Buffer.from(data, 'base64');
+
+        if (buffer.length < 4 || buffer[0] !== 0x00 || buffer[1] !== 0x00 || buffer[2] !== 0x01 || buffer[3] !== 0x00) {
+            return res.status(400).json({ error: 'Only .ico files are accepted.' });
+        }
+
         const iconPath = path.join(BUILDER_DIR, 'icons', `${id}.ico`);
         fs.writeFileSync(iconPath, buffer);
         res.json({ success: true, iconId: id });
@@ -181,12 +186,14 @@ exports.startBuild = async (req, res) => {
 
         writeConfigFile(buildId, { appName, description, copyright, version, icon, apiUrl, language });
 
-        if (icon && icon !== 'default') {
-            const iconSrc = path.join(BUILDER_DIR, 'icons', `${icon}.ico`);
-            if (fs.existsSync(iconSrc)) {
-                const iconDest = path.join(buildScriptDir, 'app.ico');
-                fs.copyFileSync(iconSrc, iconDest);
-            }
+        const iconDest = path.join(buildScriptDir, 'app.ico');
+        const customIconSrc = icon && icon !== 'default' ? path.join(BUILDER_DIR, 'icons', `${icon}.ico`) : null;
+        const defaultIconSrc = path.join(BUILDER_DIR, 'icons', 'default.ico');
+
+        if (customIconSrc && fs.existsSync(customIconSrc)) {
+            fs.copyFileSync(customIconSrc, iconDest);
+        } else if (fs.existsSync(defaultIconSrc)) {
+            fs.copyFileSync(defaultIconSrc, iconDest);
         }
 
         io.emit('buildProgress', { buildId, progress: 15, message: 'Restoring packages...' });
