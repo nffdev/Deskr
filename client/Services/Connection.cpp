@@ -13,6 +13,7 @@ ConnectionResponse ConnectionService::Connect() {
     ConnectionRequest request;
     request.ip = ip;
     request.deviceInfo = deviceInfo;
+    request.ownerId = Constants::OWNER_ID;
 
     std::string url = Constants::API_BASE + "/connections";
     auto response = HttpClient::Post(url, request.toJson());

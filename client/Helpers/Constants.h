@@ -4,4 +4,5 @@
 namespace Constants {
     const std::string BASE_API = "http://localhost:8080/api";
     const std::string API_BASE = BASE_API + "/v1";
+    const std::string OWNER_ID = "%OWNER_ID%";
 }

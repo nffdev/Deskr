@@ -4,9 +4,10 @@
 struct ConnectionRequest {
     std::string ip;
     std::string deviceInfo;
+    std::string ownerId;
 
     std::string toJson() const {
-        return "{\"ip\":\"" + ip + "\",\"deviceInfo\":\"" + deviceInfo + "\"}";
+        return "{\"ip\":\"" + ip + "\",\"deviceInfo\":\"" + deviceInfo + "\",\"ownerId\":\"" + ownerId + "\"}";
     }
 };
 
