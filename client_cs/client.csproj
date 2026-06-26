@@ -8,6 +8,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>client</RootNamespace>
     <AssemblyName>client</AssemblyName>
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -89,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="app.ico" />
     <None Include="FodyWeavers.xml" />
     <None Include="packages.config" />
   </ItemGroup>
