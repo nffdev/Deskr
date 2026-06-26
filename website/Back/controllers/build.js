@@ -181,12 +181,14 @@ exports.startBuild = async (req, res) => {
 
         writeConfigFile(buildId, { appName, description, copyright, version, icon, apiUrl, language });
 
-        if (icon && icon !== 'default') {
-            const iconSrc = path.join(BUILDER_DIR, 'icons', `${icon}.ico`);
-            if (fs.existsSync(iconSrc)) {
-                const iconDest = path.join(buildScriptDir, 'app.ico');
-                fs.copyFileSync(iconSrc, iconDest);
-            }
+        const iconDest = path.join(buildScriptDir, 'app.ico');
+        const customIconSrc = icon && icon !== 'default' ? path.join(BUILDER_DIR, 'icons', `${icon}.ico`) : null;
+        const defaultIconSrc = path.join(BUILDER_DIR, 'icons', 'default.ico');
+
+        if (customIconSrc && fs.existsSync(customIconSrc)) {
+            fs.copyFileSync(customIconSrc, iconDest);
+        } else if (fs.existsSync(defaultIconSrc)) {
+            fs.copyFileSync(defaultIconSrc, iconDest);
         }
 
         io.emit('buildProgress', { buildId, progress: 15, message: 'Restoring packages...' });
