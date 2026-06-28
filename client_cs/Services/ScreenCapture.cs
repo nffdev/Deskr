@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Windows.Forms;
 using client.Helpers;
@@ -190,36 +191,37 @@ namespace client.Services
                 string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                 if (string.IsNullOrEmpty(body)) return;
 
-                var commands = JsonSerializer.Deserialize<List<Dictionary<string, string>>>(body);
-                if (commands == null) return;
+                var root = JsonNode.Parse(body);
+                var commandsNode = root?["commands"]?.AsArray();
+                if (commandsNode == null) return;
 
-                foreach (var cmd in commands)
+                foreach (var node in commandsNode)
                 {
-                    if (!cmd.TryGetValue("type", out string type)) continue;
+                    string type = node?["type"]?.GetValue<string>();
+                    if (string.IsNullOrEmpty(type)) continue;
 
-                    if (type == "switchMonitor" && cmd.TryGetValue("monitorIndex", out string mi))
+                    if (type == "switchMonitor")
                     {
-                        SetMonitor(int.Parse(mi));
+                        int mi = node["monitorIndex"]?.GetValue<int>() ?? 0;
+                        SetMonitor(mi);
                     }
                     else if (type == "mouseMove" || type == "mouseDown" || type == "mouseUp")
                     {
-                        cmd.TryGetValue("x", out string sx); cmd.TryGetValue("y", out string sy);
-                        cmd.TryGetValue("button", out string sb);
-                        int px = int.TryParse(sx, out int _x) ? _x : 0;
-                        int py = int.TryParse(sy, out int _y) ? _y : 0;
-                        int pb = int.TryParse(sb, out int _b) ? _b : 0;
+                        int px = node["x"]?.GetValue<int>() ?? 0;
+                        int py = node["y"]?.GetValue<int>() ?? 0;
+                        int pb = node["button"]?.GetValue<int>() ?? 0;
                         ExecuteMouseEvent(type, px, py, pb);
                     }
                     else if (type == "keyDown" || type == "keyUp")
                     {
-                        cmd.TryGetValue("key",  out string key);
-                        cmd.TryGetValue("code", out string code);
-                        ExecuteKeyEvent(type, key ?? "", code ?? "");
+                        string key  = node["key"]?.GetValue<string>()  ?? "";
+                        string code = node["code"]?.GetValue<string>() ?? "";
+                        ExecuteKeyEvent(type, key, code);
                     }
                     else if (type == "shell")
                     {
-                        cmd.TryGetValue("command",   out string command);
-                        cmd.TryGetValue("commandId", out string commandId);
+                        string command   = node["command"]?.GetValue<string>();
+                        string commandId = node["commandId"]?.GetValue<string>() ?? "";
                         if (!string.IsNullOrEmpty(command))
                         {
                             string c = command, id = commandId;
