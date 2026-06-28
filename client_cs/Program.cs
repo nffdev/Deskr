@@ -1,5 +1,5 @@
 using System;
-using System.Threading.Tasks;
+using System.Threading;
 using client.Services;
 using client.Helpers;
 using client.Models;
@@ -8,43 +8,90 @@ namespace client
 {
     class Program
     {
-        static async Task Main(string[] args)
+        private static readonly ConnectionService _connectionService = new ConnectionService();
+        private static ScreenCapture              _screenCapture;
+        private static volatile bool              _running = true;
+        private static readonly object            _sessionLock = new object();
+        private static string                     _connectionId;
+
+        private static ReconnectService _reconnect;
+
+        [STAThread]
+        static void Main(string[] args)
         {
-            try
+            _reconnect = new ReconnectService(StartSession);
+
+            if (!Consent.ShowConsentDialog())
             {
-                Console.WriteLine("Connecting...");
-
-                var connectionService = new ConnectionService();
-                var connectionData = await connectionService.ConnectAsync();
-
-                Console.WriteLine("\nSuccessfully connected!");
-                Console.WriteLine($"IP: {connectionData.Ip}");
-                Console.WriteLine($"Device Info: {connectionData.DeviceInfo}");
-                Console.WriteLine($"Timestamp: {connectionData.Timestamp}");
-
-                Console.WriteLine("\nConnection active.");
-                Console.ReadKey();
-
-                if (!string.IsNullOrEmpty(connectionData.Id))
-                {
-                    try
-                    {
-                        await connectionService.DisconnectAsync(connectionData.Id);
-                        Console.WriteLine("Inactive connection.");
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine("Error disconnecting.");
-                    }
-                }
+                Console.WriteLine("Installation cancelled by user.");
+                return;
             }
-            catch (Exception e)
+
+            if (!StartSession())
             {
-                Console.WriteLine($"Error: {e.Message}");
+                Console.WriteLine("Initial connection failed. Starting reconnection...");
+                _reconnect.TriggerReconnect();
+            }
+
+            Console.WriteLine("Press any key to stop...");
+            Console.ReadKey(true);
+
+            _running = false;
+            _reconnect.Stop();
+
+            lock (_sessionLock)
+            {
+                _screenCapture?.Stop();
+                _screenCapture = null;
+            }
+
+            if (!string.IsNullOrEmpty(_connectionId))
+            {
+                try { _connectionService.Disconnect(_connectionId); }
+                catch { }
             }
 
             Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
+            Console.ReadKey(true);
+        }
+
+        private static bool StartSession()
+        {
+            lock (_sessionLock)
+            {
+                _screenCapture?.Stop();
+                _screenCapture = null;
+                _connectionService.StopHeartbeat();
+
+                try
+                {
+                    var data = _connectionService.Connect(() =>
+                    {
+                        if (_running)
+                        {
+                            Console.WriteLine("[disconnected] Connection lost.");
+                            _reconnect.TriggerReconnect();
+                        }
+                    });
+
+                    _connectionId = data.Id;
+
+                    Console.WriteLine("[Deskr] Successfully connected!");
+                    Console.WriteLine($"[Deskr] IP: {data.Ip}");
+                    Console.WriteLine($"[Deskr] Device: {data.DeviceInfo}");
+
+                    _screenCapture = new ScreenCapture(data.Id, 1000);
+                    _screenCapture.Start();
+
+                    Console.WriteLine("[connected]");
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[error] Connection failed: {ex.Message}");
+                    return false;
+                }
+            }
         }
     }
 }
