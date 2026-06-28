@@ -199,11 +199,18 @@ exports.startBuild = async (req, res) => {
             iconAvailable = true;
         }
 
-        if (language === 'cpp' && !iconAvailable) {
-            const rcPath = path.join(buildScriptDir, 'client.rc');
-            let rcContent = fs.readFileSync(rcPath, 'utf-8');
-            rcContent = rcContent.replace(/IDI_APPICON ICON "app\.ico"\n?/, '');
-            fs.writeFileSync(rcPath, rcContent);
+        if (!iconAvailable) {
+            if (language === 'cpp') {
+                const rcPath = path.join(buildScriptDir, 'client.rc');
+                let rcContent = fs.readFileSync(rcPath, 'utf-8');
+                rcContent = rcContent.replace(/IDI_APPICON ICON "app\.ico"\n?/, '');
+                fs.writeFileSync(rcPath, rcContent);
+            } else if (language === 'cs') {
+                const csprojPath = path.join(buildScriptDir, template.projectFile);
+                let csprojContent = fs.readFileSync(csprojPath, 'utf-8');
+                csprojContent = csprojContent.replace(/<ApplicationIcon>.*?<\/ApplicationIcon>\n?/, '');
+                fs.writeFileSync(csprojPath, csprojContent);
+            }
         }
 
         io.emit('buildProgress', { buildId, progress: 15, message: 'Restoring packages...' });
