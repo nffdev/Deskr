@@ -3,6 +3,7 @@
 #include "../helpers/constants.h"
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 Heartbeat::Heartbeat(const std::string& connectionId, DisconnectCallback onDisconnected)
     : _connectionId(connectionId), _running(true), _onDisconnected(onDisconnected) {
@@ -33,6 +34,9 @@ void Heartbeat::Run() {
 
             if (response.statusCode == 200) {
                 failures = 0;
+            } else if (response.statusCode == 404 || response.statusCode == 0) {
+                failures = MAX_FAILURES;
+                std::cout << "Heartbeat fatal (" << response.statusCode << ") -> disconnecting immediately" << std::endl;
             } else {
                 ++failures;
                 std::cout << "Heartbeat failed (" << response.statusCode << ") -> " << failures << "/" << MAX_FAILURES << std::endl;
@@ -46,7 +50,9 @@ void Heartbeat::Run() {
         if (failures >= MAX_FAILURES && _running) {
             std::cout << "[disconnected] Heartbeat lost." << std::endl;
             _running = false;
-            if (_onDisconnected) _onDisconnected();
+            if (_onDisconnected) {
+                std::thread([cb = _onDisconnected]() { cb(); }).detach();
+            }
             return;
         }
     }
