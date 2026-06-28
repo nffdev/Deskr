@@ -57,6 +57,8 @@ HttpClient::Response HttpClient::SendRequest(const std::string& url, const std::
 
     if (!hSession) return result;
 
+    WinHttpSetTimeouts(hSession, 5000, 5000, 5000, 5000);
+
     HINTERNET hConnect = WinHttpConnect(hSession, parts.host.c_str(), parts.port, 0);
     if (!hConnect) {
         WinHttpCloseHandle(hSession);
