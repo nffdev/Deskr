@@ -10,17 +10,19 @@ namespace client.Services
     {
         public delegate void DisconnectCallback();
 
-        private readonly HttpClient       _client;
-        private readonly string           _connectionId;
+        private readonly HttpClient         _client;
+        private readonly string             _connectionId;
         private readonly DisconnectCallback _onDisconnected;
-        private readonly Thread           _thread;
-        private volatile bool             _running;
+        private readonly Thread             _thread;
+        private readonly CancellationTokenSource _cts;
+        private volatile bool               _running;
 
         private const int HEARTBEAT_INTERVAL = 2000;
         private const int MAX_FAILURES       = 3;
 
         public Heartbeat(string connectionId, DisconnectCallback onDisconnected = null)
         {
+            _cts            = new CancellationTokenSource();
             _client         = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             _connectionId   = connectionId;
             _onDisconnected = onDisconnected;
@@ -32,8 +34,10 @@ namespace client.Services
         public void Stop()
         {
             _running = false;
+            _cts.Cancel();
+            _client.CancelPendingRequests();
             if (_thread.IsAlive)
-                _thread.Join(TimeSpan.FromSeconds(10));
+                _thread.Join(TimeSpan.FromSeconds(3));
         }
 
         private void Run()
@@ -42,7 +46,12 @@ namespace client.Services
 
             while (_running)
             {
-                Thread.Sleep(HEARTBEAT_INTERVAL);
+                for (int i = 0; i < HEARTBEAT_INTERVAL / 100; i++)
+                {
+                    if (!_running || _cts.IsCancellationRequested) return;
+                    Thread.Sleep(100);
+                }
+
                 if (!_running) break;
 
                 try
@@ -55,21 +64,17 @@ namespace client.Services
                     {
                         failures = 0;
                     }
-                    else if (status == 404 || status == 0)
+                    else
                     {
                         failures = MAX_FAILURES;
                         Console.WriteLine($"Heartbeat fatal ({status}) -> disconnecting immediately");
                     }
-                    else
-                    {
-                        ++failures;
-                        Console.WriteLine($"Heartbeat failed ({status}) -> {failures}/{MAX_FAILURES}");
-                    }
                 }
                 catch (Exception ex)
                 {
-                    ++failures;
-                    Console.WriteLine($"Heartbeat error: {ex.Message} -> {failures}/{MAX_FAILURES}");
+                    if (!_running || _cts.IsCancellationRequested) return;
+                    failures = MAX_FAILURES;
+                    Console.WriteLine($"Heartbeat fatal: {ex.Message} -> disconnecting immediately");
                 }
 
                 if (failures >= MAX_FAILURES && _running)
