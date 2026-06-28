@@ -10,90 +10,63 @@ namespace client.Services
 {
     public class ConnectionService
     {
-        private readonly HttpClient _client;
-        private readonly IpService _ipService;
+        private readonly HttpClient            _client;
+        private readonly IpService             _ipService;
         private readonly JsonSerializerOptions _jsonOptions;
-        private Heartbeat _heartbeat;
+        private Heartbeat                      _heartbeat;
 
         public ConnectionService()
         {
-            _client = new HttpClient();
-            _ipService = new IpService();
-            _jsonOptions = new JsonSerializerOptions
+            _client      = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            _ipService   = new IpService();
+            _jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = null };
+        }
+
+        public ConnectionResponse Connect(Heartbeat.DisconnectCallback onDisconnected = null)
+        {
+            var ip         = _ipService.GetPublicIpAsync().GetAwaiter().GetResult();
+            var deviceInfo = SystemInfo.GetDeviceInfo();
+
+            var request = new ConnectionRequest
             {
-                PropertyNamingPolicy = null,
-                WriteIndented = true
+                Ip         = ip,
+                DeviceInfo = deviceInfo,
+                OwnerId    = Constants.OWNER_ID
             };
-        }
 
-        public async Task<ConnectionResponse> ConnectAsync()
-        {
-            try 
-            {
-                var ip = await _ipService.GetPublicIpAsync();
-                var deviceInfo = SystemInfo.GetDeviceInfo();
-                
-                var connectionInfo = new ConnectionRequest
-                {
-                    Ip = ip,
-                    DeviceInfo = deviceInfo
-                };
+            var content  = new StringContent(JsonSerializer.Serialize(request, _jsonOptions), Encoding.UTF8, "application/json");
+            var response = _client.PostAsync($"{Constants.API_BASE}/connections", content).GetAwaiter().GetResult();
 
-                var jsonRequest = JsonSerializer.Serialize(connectionInfo, _jsonOptions);
-                // Console.WriteLine($"Sending JSON to server: {jsonRequest}");
-                // Console.WriteLine($"Target URL: {Constants.API_BASE}/connections");
-                
-                var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-                
-                // Console.WriteLine("Request Headers:");
-                // Console.WriteLine($"Content-Type: {content.Headers.ContentType}");
-                
-                var response = await _client.PostAsync($"{Constants.API_BASE}/connections", content);
-                
-                // Console.WriteLine($"Response Status: {response.StatusCode}");
-                // Console.WriteLine("Response Headers:");
-                foreach (var header in response.Headers)
-                {
-                    // Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
-                }
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    throw new HttpRequestException($"Server returned {response.StatusCode}: {errorContent}");
-                }
-
-                var responseBody = await response.Content.ReadAsStringAsync();
-                var connectionResponse = JsonSerializer.Deserialize<ConnectionResponse>(responseBody, _jsonOptions);
-                // Console.WriteLine($"Server response: {responseBody}");
-                
-                _heartbeat = new Heartbeat(connectionResponse.Id);
-                
-                return connectionResponse;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in ConnectAsync: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
-                throw;
-            }
-        }
-
-        public async Task DisconnectAsync(string connectionId)
-        {
-            if (string.IsNullOrEmpty(connectionId))
-                throw new ArgumentException("Cannot be null or empty", nameof(connectionId));
-
-            _heartbeat?.Stop();
-
-            var response = await _client.PutAsync($"{Constants.API_BASE}/connections/{connectionId}/inactive", null);
             if (!response.IsSuccessStatusCode)
             {
-                throw new HttpRequestException($"Failed to disconnect: {response.StatusCode}");
+                var err = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                throw new HttpRequestException($"Server returned {(int)response.StatusCode}: {err}");
             }
+
+            var body       = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            var connection = JsonSerializer.Deserialize<ConnectionResponse>(body, _jsonOptions);
+
+            _heartbeat = new Heartbeat(connection.Id, onDisconnected);
+
+            return connection;
+        }
+
+        public void StopHeartbeat()
+        {
+            _heartbeat?.Stop();
+            _heartbeat = null;
+        }
+
+        public void Disconnect(string connectionId)
+        {
+            if (string.IsNullOrEmpty(connectionId))
+                throw new ArgumentException("connectionId cannot be empty");
+
+            StopHeartbeat();
+
+            var response = _client.PutAsync($"{Constants.API_BASE}/connections/{connectionId}/inactive", null).GetAwaiter().GetResult();
+            if (!response.IsSuccessStatusCode)
+                throw new HttpRequestException($"Failed to disconnect: {(int)response.StatusCode}");
         }
     }
 }
