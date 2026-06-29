@@ -12,6 +12,16 @@ export default function Remote() {
   const { user } = useAuth();
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const reconnectTimerRef = useRef(null);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectingRef = useRef(false);
+  const MAX_RECONNECT_ATTEMPTS = 10;
+  const RECONNECT_TICK_MS = 3000;
+  const lastFrameRef = useRef(null);
+  const frameWatchdogRef = useRef(null);
+  const connectedRef = useRef(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [showToolbar, setShowToolbar] = useState(true);
   const [showKeyboard, setShowKeyboard] = useState(false);
@@ -60,6 +70,50 @@ export default function Remote() {
 
   const selectedDeviceRef = useRef(null);
   useEffect(() => { selectedDeviceRef.current = selectedDevice; }, [selectedDevice]);
+  useEffect(() => { connectedRef.current = connected; }, [connected]);
+
+  const scheduleReconnectTick = () => {
+    clearTimeout(reconnectTimerRef.current);
+    reconnectTimerRef.current = setTimeout(() => {
+      if (!reconnectingRef.current) return;
+      const next = reconnectAttemptRef.current + 1;
+      reconnectAttemptRef.current = next;
+      setReconnectAttempt(next);
+      if (next >= MAX_RECONNECT_ATTEMPTS) {
+        reconnectingRef.current = false;
+        setReconnecting(false);
+        setSelectedDevice(null);
+      } else {
+        scheduleReconnectTick();
+      }
+    }, RECONNECT_TICK_MS);
+  };
+
+  useEffect(() => {
+    if (!connected) {
+      clearInterval(frameWatchdogRef.current);
+      return;
+    }
+    lastFrameRef.current = Date.now();
+    frameWatchdogRef.current = setInterval(() => {
+      if (!connectedRef.current || reconnectingRef.current) return;
+      const elapsed = Date.now() - (lastFrameRef.current || 0);
+      if (elapsed > 8000) {
+        setConnected(false);
+        setScreenFrame(null);
+        setLatency(null);
+        setMonitors([]);
+        setActiveMonitor(0);
+        setShowMonitorPicker(false);
+        reconnectingRef.current = true;
+        setReconnecting(true);
+        reconnectAttemptRef.current = 0;
+        setReconnectAttempt(0);
+        scheduleReconnectTick();
+      }
+    }, 2000);
+    return () => clearInterval(frameWatchdogRef.current);
+  }, [connected]);
 
   useEffect(() => {
     const socket = io(config.BASE_API.replace('/api', ''), {
@@ -75,6 +129,7 @@ export default function Remote() {
           setLatency(Date.now() - data.timestamp);
         }
         setScreenFrame(`data:image/jpeg;base64,${data.frame}`);
+        lastFrameRef.current = Date.now();
       }
     });
 
@@ -85,19 +140,34 @@ export default function Remote() {
       }
     });
 
-    socket.on('newConnection', () => fetchDevices());
+    socket.on('newConnection', (data) => {
+      fetchDevices();
+      const dev = selectedDeviceRef.current;
+      if (dev && reconnectingRef.current && data.ownerId === dev.ownerId) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectingRef.current = false;
+        setReconnecting(false);
+        setReconnectAttempt(0);
+        reconnectAttemptRef.current = 0;
+      }
+    });
+
     socket.on('connectionUpdated', (data) => {
       fetchDevices();
       const dev = selectedDeviceRef.current;
       if (dev && data._id === dev._id && !data.isActive) {
         setConnected(false);
         setConnecting(false);
-        setSelectedDevice(null);
         setScreenFrame(null);
         setLatency(null);
         setMonitors([]);
         setActiveMonitor(0);
         setShowMonitorPicker(false);
+        reconnectingRef.current = true;
+        setReconnecting(true);
+        reconnectAttemptRef.current = 0;
+        setReconnectAttempt(0);
+        scheduleReconnectTick();
       }
     });
 
@@ -293,6 +363,11 @@ export default function Remote() {
   }, [connected, showKeyboard, selectedDevice]);
 
   const manageDisconnect = () => {
+    clearTimeout(reconnectTimerRef.current);
+    reconnectingRef.current = false;
+    setReconnecting(false);
+    setReconnectAttempt(0);
+    reconnectAttemptRef.current = 0;
     setConnected(false);
     setSelectedDevice(null);
     setScreenFrame(null);
@@ -344,7 +419,29 @@ export default function Remote() {
       )}
 
       <div className="relative z-10 max-w-5xl mx-auto p-3 sm:p-4">
-        {!connected && !connecting ? (
+        {reconnecting ? (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mb-6 relative">
+              <div className="absolute inset-0 bg-yellow-500/20 rounded-full animate-ping" />
+              <div className="relative w-full h-full bg-yellow-500/10 rounded-full flex items-center justify-center">
+                <Wifi className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 animate-pulse" />
+              </div>
+            </div>
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Reconnecting...</h2>
+            <p className="text-sm text-gray-400 mb-1">
+              Attempt {reconnectAttempt + 1} / {MAX_RECONNECT_ATTEMPTS}
+            </p>
+            <p className="text-xs text-gray-600 mb-6">Waiting for {selectedDevice?.deviceInfo} to come back online</p>
+            <div className="mt-2 flex items-center gap-2 mb-8">
+              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+            <button onClick={manageDisconnect} className="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 font-medium hover:bg-red-500/20 transition-colors">
+              Cancel
+            </button>
+          </div>
+        ) : !connected && !connecting ? (
           <div className="space-y-4">
             <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 sm:p-5 overflow-visible relative z-20">
               <h2 className="font-semibold text-base sm:text-lg text-white mb-4">Select Device</h2>
