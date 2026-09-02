@@ -6,7 +6,7 @@ const globalLimiter = rateLimit({
     message: { message: 'Too many requests, please try again later.' },
     skip: (req) => {
         const path = req.path;
-        return path.includes('/screen') || path.includes('/heartbeat') || path.includes('/monitors') || path.includes('/command');
+        return path.includes('/screen') || path.includes('/heartbeat') || path.includes('/monitors') || path.includes('/command') || path.includes('/connections/recent');
     }
 });
 
