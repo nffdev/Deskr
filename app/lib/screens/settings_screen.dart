@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/pressable.dart';
+import '../widgets/app_background.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -40,18 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            top: -150,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +115,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [AppColors.purple, Color(0xFF7C3AED)]),
+                  gradient: const LinearGradient(
+                    colors: [AppColors.purpleLight, AppColors.purpleDeep],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Center(

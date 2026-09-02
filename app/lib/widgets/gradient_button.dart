@@ -42,20 +42,20 @@ class _GradientButtonState extends State<GradientButton> {
           duration: AppMotion.normal,
           curve: AppMotion.curve,
           width: double.infinity,
-          height: 48,
+          height: 50,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: widget.loading
-                  ? [AppColors.purple.withValues(alpha: 0.6), const Color(0xFF7C3AED).withValues(alpha: 0.6)]
-                  : const [AppColors.purple, Color(0xFF7C3AED)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
+                  ? [AppColors.purpleLight.withValues(alpha: 0.55), AppColors.purpleDeep.withValues(alpha: 0.55)]
+                  : const [AppColors.purpleLight, AppColors.purpleDeep],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
             borderRadius: BorderRadius.circular(AppRadius.md),
             boxShadow: [
               BoxShadow(
-                color: AppColors.purple.withValues(alpha: _pressed ? 0.18 : 0.32),
-                blurRadius: _pressed ? 12 : 20,
+                color: AppColors.purple.withValues(alpha: _pressed ? 0.12 : 0.22),
+                blurRadius: _pressed ? 10 : 18,
                 offset: Offset(0, _pressed ? 2 : 6),
               ),
             ],
@@ -74,9 +74,9 @@ class _GradientButtonState extends State<GradientButton> {
                     widget.label,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: -0.1,
+                      letterSpacing: -0.41,
                     ),
                   ),
           ),
