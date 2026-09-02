@@ -174,16 +174,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onTap: () {},
         ),
         const SizedBox(height: AppSpacing.xl),
-        GlassCard(
-          padding: const EdgeInsets.all(14),
+        Pressable(
           onTap: _logout,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.logout_rounded, size: 18, color: AppColors.red.withValues(alpha: 0.8)),
-              const SizedBox(width: 8),
-              const Text('Log Out', style: TextStyle(color: AppColors.red, fontSize: 14, fontWeight: FontWeight.w500)),
-            ],
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: AppColors.red,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.logout_rounded, size: 18, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  'Log Out',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.41,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
