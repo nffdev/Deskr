@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+
 import '../theme.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
@@ -15,24 +16,35 @@ class DevicesScreen extends StatefulWidget {
 class _DevicesScreenState extends State<DevicesScreen> {
   List<Map<String, dynamic>> _devices = [];
   bool _loading = true;
+  Timer? _refetchDebounce;
 
   @override
   void initState() {
     super.initState();
     _fetchDevices();
 
-    SocketService.instance.on('newConnection', (_) => _fetchDevices());
-    SocketService.instance.on('connectionUpdated', (_) => _fetchDevices());
+    SocketService.instance.on('newConnection', (_) => _scheduleRefetch());
+    SocketService.instance.on('connectionUpdated', (_) => _scheduleRefetch());
+  }
+
+  @override
+  void dispose() {
+    _refetchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleRefetch() {
+    _refetchDebounce?.cancel();
+    _refetchDebounce = Timer(const Duration(seconds: 3), _fetchDevices);
   }
 
   Future<void> _fetchDevices() async {
     final devices = await ApiService.getConnections();
-    if (mounted) {
-      setState(() {
-        _devices = devices;
-        _loading = false;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      if (devices != null) _devices = devices;
+      _loading = false;
+    });
   }
 
   @override
