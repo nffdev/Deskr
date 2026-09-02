@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/push_service.dart';
 import '../widgets/pressable.dart';
 import 'devices_screen.dart';
 import 'remote_screen.dart';
@@ -23,6 +24,13 @@ class _HomeScreenState extends State<HomeScreen> {
     ShellScreen(),
     SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    PushService.requestPermission();
+    PushService.syncExistingToken();
+  }
 
   @override
   Widget build(BuildContext context) {

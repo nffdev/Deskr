@@ -148,6 +148,46 @@ const deleteAccount = async (req, res) => {
     return res.json({ success: true });
 };
 
+const registerDeviceToken = async (req, res) => {
+    const { token, platform } = req.body;
+
+    if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: 'token is required.' });
+    }
+
+    const user = await User.findOne({ id: req.user.id });
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    if (!Array.isArray(user.deviceTokens)) user.deviceTokens = [];
+
+    const existing = user.deviceTokens.find(d => d.token === token);
+    if (existing) {
+        existing.updatedAt = new Date();
+    } else {
+        user.deviceTokens.push({ token, platform: platform || 'ios' });
+    }
+
+    await user.save();
+
+    return res.json({ success: true });
+};
+
+const removeDeviceToken = async (req, res) => {
+    const { token } = req.body;
+
+    if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: 'token is required.' });
+    }
+
+    const user = await User.findOne({ id: req.user.id });
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    user.deviceTokens = (user.deviceTokens || []).filter(d => d.token !== token);
+    await user.save();
+
+    return res.json({ success: true });
+};
+
 module.exports = {
     getMe,
     changePassword,
@@ -155,5 +195,7 @@ module.exports = {
     updateNotifications,
     getStorage,
     clearStorage,
-    deleteAccount
+    deleteAccount,
+    registerDeviceToken,
+    removeDeviceToken
 };
