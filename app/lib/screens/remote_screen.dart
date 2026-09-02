@@ -37,43 +37,47 @@ class _RemoteScreenState extends State<RemoteScreen> {
     super.initState();
     _fetchDevices();
 
-    SocketService.instance.on('screenFrame', (data) {
-      if (_selectedDevice != null && data['connectionId'] == _selectedDevice!['_id']) {
-        if (mounted) {
-          setState(() {
-            _screenFrame = data['frame'];
-            _latency = SocketService.instance.latency;
-          });
-        }
-      }
-    });
+    SocketService.instance.on('screenFrame', _onScreenFrame);
+    SocketService.instance.on('monitors', _onMonitors);
+    SocketService.instance.on('connectionUpdated', _onConnectionUpdated);
+  }
 
-    SocketService.instance.on('monitors', (data) {
-      if (_selectedDevice != null && data['connectionId'] == _selectedDevice!['_id']) {
-        if (mounted) {
-          setState(() {
-            _monitors = List<Map<String, dynamic>>.from(data['monitors'] ?? []);
-          });
-        }
+  void _onScreenFrame(dynamic data) {
+    if (_selectedDevice != null && data['connectionId'] == _selectedDevice!['_id']) {
+      if (mounted) {
+        setState(() {
+          _screenFrame = data['frame'];
+          _latency = SocketService.instance.latency;
+        });
       }
-    });
+    }
+  }
 
-    SocketService.instance.on('connectionUpdated', (data) {
-      _fetchDevices();
-      if (_selectedDevice != null && data['_id'] == _selectedDevice!['_id'] && data['isActive'] != true) {
-        if (mounted) {
-          _exitFullscreen();
-          setState(() {
-            _connected = false;
-            _connecting = false;
-            _selectedDevice = null;
-            _screenFrame = null;
-            _latency = null;
-            _monitors = [];
-          });
-        }
+  void _onMonitors(dynamic data) {
+    if (_selectedDevice != null && data['connectionId'] == _selectedDevice!['_id']) {
+      if (mounted) {
+        setState(() {
+          _monitors = List<Map<String, dynamic>>.from(data['monitors'] ?? []);
+        });
       }
-    });
+    }
+  }
+
+  void _onConnectionUpdated(dynamic data) {
+    _fetchDevices();
+    if (_selectedDevice != null && data['_id'] == _selectedDevice!['_id'] && data['isActive'] != true) {
+      if (mounted) {
+        _exitFullscreen();
+        setState(() {
+          _connected = false;
+          _connecting = false;
+          _selectedDevice = null;
+          _screenFrame = null;
+          _latency = null;
+          _monitors = [];
+        });
+      }
+    }
   }
 
   Future<void> _fetchDevices() async {
@@ -226,6 +230,9 @@ class _RemoteScreenState extends State<RemoteScreen> {
 
   @override
   void dispose() {
+    SocketService.instance.off('screenFrame', _onScreenFrame);
+    SocketService.instance.off('monitors', _onMonitors);
+    SocketService.instance.off('connectionUpdated', _onConnectionUpdated);
     _keyboardFocus.dispose();
     super.dispose();
   }

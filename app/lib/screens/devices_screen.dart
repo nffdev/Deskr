@@ -20,17 +20,21 @@ class _DevicesScreenState extends State<DevicesScreen> {
   bool _loading = true;
   Timer? _refetchDebounce;
 
+  void _onSocketEvent(dynamic _) => _scheduleRefetch();
+
   @override
   void initState() {
     super.initState();
     _fetchDevices();
 
-    SocketService.instance.on('newConnection', (_) => _scheduleRefetch());
-    SocketService.instance.on('connectionUpdated', (_) => _scheduleRefetch());
+    SocketService.instance.on('newConnection', _onSocketEvent);
+    SocketService.instance.on('connectionUpdated', _onSocketEvent);
   }
 
   @override
   void dispose() {
+    SocketService.instance.off('newConnection', _onSocketEvent);
+    SocketService.instance.off('connectionUpdated', _onSocketEvent);
     _refetchDebounce?.cancel();
     super.dispose();
   }

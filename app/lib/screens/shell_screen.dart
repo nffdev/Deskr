@@ -28,8 +28,10 @@ class _ShellScreenState extends State<ShellScreen> {
     _fetchDevices();
 
     SocketService.instance.on('shellOutput', _onShellOutput);
-    SocketService.instance.on('connectionUpdated', (_) => _fetchDevices());
+    SocketService.instance.on('connectionUpdated', _onConnectionUpdated);
   }
+
+  void _onConnectionUpdated(dynamic _) => _fetchDevices();
 
   void _onShellOutput(dynamic data) {
     if (_selectedDevice != null && data['connectionId'] == _selectedDevice!['_id']) {
@@ -98,6 +100,7 @@ class _ShellScreenState extends State<ShellScreen> {
   @override
   void dispose() {
     SocketService.instance.off('shellOutput', _onShellOutput);
+    SocketService.instance.off('connectionUpdated', _onConnectionUpdated);
     _controller.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
