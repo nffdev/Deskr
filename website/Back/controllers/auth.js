@@ -16,6 +16,7 @@ const cookieOptions = () => ({
 const issueToken = (res, userId) => {
     const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.cookie('token', token, cookieOptions());
+    return token;
 };
 
 const register = async (req, res) => {
@@ -33,8 +34,8 @@ const register = async (req, res) => {
     const user = new User({ id: userId, username, email, password: hashedPassword });
     await user.save();
 
-    issueToken(res, userId);
-    return res.json({ success: true });
+    const token = issueToken(res, userId);
+    return res.status(201).json({ success: true, token });
 }
 
 const login = async (req, res) => {
@@ -45,8 +46,8 @@ const login = async (req, res) => {
     if (!existing) return res.status(400).json({ message: 'Email or password is invalid.' });
     if (!bcrypt.compareSync(password, existing.password)) return res.status(400).json({  message: 'Email or password is invalid.' });
 
-    issueToken(res, existing.id);
-    return res.json({ success: true });
+    const token = issueToken(res, existing.id);
+    return res.json({ success: true, token });
 }
 
 const logout = async (req, res) => {
