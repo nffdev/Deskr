@@ -229,7 +229,12 @@ exports.startBuild = async (req, res) => {
 
         if (isMingw) {
             io.emit('buildProgress', { buildId, progress: 18, message: 'Compiling resources...' });
-            const windres = path.join(path.dirname(MINGW_PATH), 'windres.exe');
+            const mingwDir = path.dirname(MINGW_PATH);
+            const mingwBase = path.basename(MINGW_PATH);
+            const hasExe = mingwBase.endsWith('.exe');
+            const stem = hasExe ? mingwBase.slice(0, -4) : mingwBase;
+            const windresStem = stem.replace(/(g\+\+|gcc)$/i, 'windres');
+            const windres = process.env.WINDRES_PATH || path.join(mingwDir, hasExe ? `${windresStem}.exe` : windresStem);
             const windresProcess = spawn(windres, ['client.rc', '-O', 'coff', '-o', 'client.res'], { cwd: buildScriptDir });
             await new Promise((resolve) => windresProcess.on('close', () => resolve()));
         }
