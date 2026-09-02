@@ -1,4 +1,26 @@
 const Connection = require('../models/Connection');
+const User = require('../models/User');
+const { sendPush } = require('../utils/apns');
+
+async function notifyNewConnection(ownerId, connection) {
+    const user = await User.findOne({ id: ownerId });
+    if (!user) return;
+    if (user.notifications && user.notifications.connectionAlerts === false) return;
+
+    const tokens = (user.deviceTokens || []).map(d => d.token);
+    if (tokens.length === 0) return;
+
+    const invalid = await sendPush(tokens, {
+        title: 'New device connected',
+        body: `${connection.deviceInfo} (${connection.ip})`,
+        payload: { type: 'newConnection', connectionId: String(connection._id) }
+    });
+
+    if (invalid.length > 0) {
+        user.deviceTokens = user.deviceTokens.filter(d => !invalid.includes(d.token));
+        await user.save();
+    }
+}
 
 const recordConnection = async (req, res) => {
     const ownerId = req.body.ownerId;
@@ -10,8 +32,10 @@ const recordConnection = async (req, res) => {
     const deviceInfo = req.body.deviceInfo || req.headers['user-agent'] || 'Unknown Device';
 
     let connection = await Connection.findOne({ ip, ownerId });
+    let isNewlyOnline;
 
     if (connection) {
+        isNewlyOnline = !connection.isConnectionActive();
         connection.deviceInfo = deviceInfo;
         connection.isActive = true;
         connection.lastHeartbeat = new Date();
@@ -19,9 +43,17 @@ const recordConnection = async (req, res) => {
     } else {
         connection = new Connection({ ownerId, ip, deviceInfo });
         await connection.save();
+        isNewlyOnline = true;
     }
 
     req.app.get('io').emit('newConnection', connection);
+
+    if (isNewlyOnline) {
+        notifyNewConnection(ownerId, connection).catch(err =>
+            console.error('Failed to send connection push:', err.message)
+        );
+    }
+
     res.json(connection);
 };
 
@@ -181,6 +213,7 @@ const receiveShellOutput = async (req, res) => {
 };
 
 module.exports = {
+    __notifyNewConnection: notifyNewConnection,
     recordConnection,
     getRecentConnections,
     handleHeartbeat,
