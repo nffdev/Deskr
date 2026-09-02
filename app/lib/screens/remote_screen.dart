@@ -8,6 +8,7 @@ import '../services/socket_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/pressable.dart';
 import '../widgets/visual_keyboard.dart';
+import '../widgets/app_background.dart';
 
 class RemoteScreen extends StatefulWidget {
   const RemoteScreen({super.key});
@@ -234,18 +235,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            bottom: -200,
-            right: -100,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Column(
               children: [

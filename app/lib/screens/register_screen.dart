@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/pressable.dart';
+import '../widgets/app_background.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -62,18 +63,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            top: -200,
-            right: -150,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(

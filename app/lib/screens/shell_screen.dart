@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/pressable.dart';
+import '../widgets/app_background.dart';
 
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
@@ -108,18 +109,7 @@ class _ShellScreenState extends State<ShellScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            bottom: -200,
-            left: -100,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Column(
               children: [
