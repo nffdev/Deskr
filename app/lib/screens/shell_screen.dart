@@ -42,7 +42,7 @@ class _ShellScreenState extends State<ShellScreen> {
 
   Future<void> _fetchDevices() async {
     final devices = await ApiService.getConnections();
-    if (mounted) setState(() => _devices = devices);
+    if (mounted && devices != null) setState(() => _devices = devices);
   }
 
   void _connect(Map<String, dynamic> device) {

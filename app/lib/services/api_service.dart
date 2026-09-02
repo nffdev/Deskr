@@ -4,23 +4,19 @@ import '../config.dart';
 import 'auth_service.dart';
 
 class ApiService {
-  static Future<List<Map<String, dynamic>>> getConnections() async {
+  static Future<List<Map<String, dynamic>>?> getConnections() async {
     try {
       final headers = await AuthService.authHeaders();
-      print('[API] GET ${AppConfig.apiBase}/connections/recent');
-      print('[API] Token: ${headers['Authorization']?.substring(0, 20)}...');
       final res = await http.get(
         Uri.parse('${AppConfig.apiBase}/connections/recent'),
         headers: headers,
       );
-      print('[API] Status: ${res.statusCode} Body: ${res.body.substring(0, (res.body.length > 100 ? 100 : res.body.length))}');
       if (res.statusCode == 200) {
         return List<Map<String, dynamic>>.from(jsonDecode(res.body));
       }
-      return [];
+      return null;
     } catch (e) {
-      print('[API] Error: $e');
-      return [];
+      return null;
     }
   }
 
