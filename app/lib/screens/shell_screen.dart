@@ -3,6 +3,7 @@ import '../theme.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/pressable.dart';
 
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
@@ -155,7 +156,7 @@ class _ShellScreenState extends State<ShellScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Shell', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                const Text('Shell', style: AppTypography.title),
                 Text(
                   _selectedDevice != null
                       ? 'Connected to ${_selectedDevice!['deviceInfo']}'
@@ -168,25 +169,25 @@ class _ShellScreenState extends State<ShellScreen> {
             ),
           ),
           if (_selectedDevice != null) ...[
-            GestureDetector(
+            Pressable(
               onTap: () => setState(() => _history.clear()),
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: const Icon(Icons.delete_outline_rounded, color: AppColors.textMuted, size: 18),
               ),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
+            Pressable(
               onTap: _disconnect,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: AppColors.red.withValues(alpha: 0.2)),
                 ),
                 child: const Text('Disconnect', style: TextStyle(color: AppColors.red, fontSize: 12, fontWeight: FontWeight.w500)),
@@ -229,13 +230,13 @@ class _ShellScreenState extends State<ShellScreen> {
             else
               ...onlineDevices.map((device) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: GestureDetector(
+                child: Pressable(
                   onTap: () => _connect(device),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceLight.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
@@ -362,14 +363,14 @@ class _ShellScreenState extends State<ShellScreen> {
                     ),
                   ),
                 ),
-                GestureDetector(
+                Pressable(
                   onTap: _sendCommand,
                   child: Container(
                     margin: const EdgeInsets.all(6),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: AppColors.purple.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: const Icon(Icons.send_rounded, color: AppColors.purpleLight, size: 18),
                   ),
