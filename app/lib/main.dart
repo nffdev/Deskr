@@ -4,6 +4,7 @@ import 'theme.dart';
 import 'services/auth_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'widgets/app_background.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,23 +59,29 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.purpleDim,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: const Icon(Icons.desktop_windows_rounded, color: AppColors.purpleLight, size: 36),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: AppBackground()),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.purpleDim,
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Icon(Icons.desktop_windows_rounded, color: AppColors.purpleLight, size: 36),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                const Text('Deskr', style: AppTypography.title),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Text('Deskr', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

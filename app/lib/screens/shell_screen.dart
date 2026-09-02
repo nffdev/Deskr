@@ -3,6 +3,8 @@ import '../theme.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/pressable.dart';
+import '../widgets/app_background.dart';
 
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
@@ -107,18 +109,7 @@ class _ShellScreenState extends State<ShellScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            bottom: -200,
-            left: -100,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Column(
               children: [
@@ -155,7 +146,7 @@ class _ShellScreenState extends State<ShellScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Shell', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                const Text('Shell', style: AppTypography.title),
                 Text(
                   _selectedDevice != null
                       ? 'Connected to ${_selectedDevice!['deviceInfo']}'
@@ -168,25 +159,25 @@ class _ShellScreenState extends State<ShellScreen> {
             ),
           ),
           if (_selectedDevice != null) ...[
-            GestureDetector(
+            Pressable(
               onTap: () => setState(() => _history.clear()),
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: const Icon(Icons.delete_outline_rounded, color: AppColors.textMuted, size: 18),
               ),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
+            Pressable(
               onTap: _disconnect,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: AppColors.red.withValues(alpha: 0.2)),
                 ),
                 child: const Text('Disconnect', style: TextStyle(color: AppColors.red, fontSize: 12, fontWeight: FontWeight.w500)),
@@ -203,77 +194,105 @@ class _ShellScreenState extends State<ShellScreen> {
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: GlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Online Devices', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 16),
-            if (onlineDevices.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Column(
-                  children: [
-                    Icon(Icons.cloud_off_rounded, color: AppColors.textMuted, size: 32),
-                    SizedBox(height: 8),
-                    Text('No devices online', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                  ],
-                ),
-              )
-            else
-              ...onlineDevices.map((device) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: GestureDetector(
-                  onTap: () => _connect(device),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Select Device', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 16),
+                if (onlineDevices.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceLight.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
                     ),
-                    child: Row(
+                    child: const Column(
                       children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceLight.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.monitor_rounded, color: AppColors.textSecondary, size: 18),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                device['deviceInfo'] ?? 'Unknown',
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(device['ip'] ?? '', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                            ],
-                          ),
-                        ),
-                        Container(width: 6, height: 6, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.green)),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
+                        Icon(Icons.cloud_off_rounded, color: AppColors.textMuted, size: 32),
+                        SizedBox(height: 8),
+                        Text('No devices online', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                        SizedBox(height: 2),
+                        Text('Waiting for connections...', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
                       ],
                     ),
+                  )
+                else
+                  ...onlineDevices.map((device) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Pressable(
+                      onTap: () => _connect(device),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceLight.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.monitor_rounded, color: AppColors.textSecondary, size: 18),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    device['deviceInfo'] ?? 'Unknown',
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(device['ip'] ?? '', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                            Container(width: 6, height: 6, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.green)),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          GlassCard(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+            child: Column(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.purpleDim,
+                    borderRadius: BorderRadius.circular(20),
                   ),
+                  child: Icon(Icons.terminal_rounded, color: AppColors.purpleLight.withValues(alpha: 0.5), size: 36),
                 ),
-              )),
-          ],
-        ),
+                const SizedBox(height: 12),
+                const Text('Select a device to start', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                const SizedBox(height: 4),
+                const Text('Run commands on the remote machine', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -362,14 +381,14 @@ class _ShellScreenState extends State<ShellScreen> {
                     ),
                   ),
                 ),
-                GestureDetector(
+                Pressable(
                   onTap: _sendCommand,
                   child: Container(
                     margin: const EdgeInsets.all(6),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: AppColors.purple.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: const Icon(Icons.send_rounded, color: AppColors.purpleLight, size: 18),
                   ),

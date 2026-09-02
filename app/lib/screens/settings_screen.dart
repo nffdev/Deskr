@@ -3,6 +3,8 @@ import '../theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/pressable.dart';
+import '../widgets/app_background.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -39,18 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            top: -150,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Row(
                     children: [
                       if (_activeSection != null)
-                        GestureDetector(
+                        Pressable(
                           onTap: () => setState(() {
                             _activeSection = null;
                             _passwordError = null;
@@ -71,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             height: 40,
                             decoration: BoxDecoration(
                               color: AppColors.surfaceLight.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                               border: Border.all(color: AppColors.border),
                             ),
                             child: const Icon(Icons.arrow_back_rounded, color: AppColors.textSecondary, size: 20),
@@ -83,14 +74,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           height: 40,
                           decoration: BoxDecoration(
                             color: AppColors.purpleDim,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           child: const Icon(Icons.settings_rounded, color: AppColors.purpleLight, size: 20),
                         ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.md),
                       Text(
                         _activeSection ?? 'Settings',
-                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                        style: AppTypography.title,
                       ),
                     ],
                   ),
@@ -115,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildMenu() {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       children: [
         GlassCard(
           child: Row(
@@ -124,7 +115,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [AppColors.purple, Color(0xFF7C3AED)]),
+                  gradient: const LinearGradient(
+                    colors: [AppColors.purpleLight, AppColors.purpleDeep],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Center(
@@ -178,17 +173,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
           subtitle: 'Dark',
           onTap: () {},
         ),
-        const SizedBox(height: 20),
-        GestureDetector(
+        const SizedBox(height: AppSpacing.xl),
+        Pressable(
           onTap: _logout,
-          child: GlassCard(
-            padding: const EdgeInsets.all(14),
-            child: Row(
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: AppColors.red,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.logout_rounded, size: 18, color: AppColors.red.withValues(alpha: 0.8)),
-                const SizedBox(width: 8),
-                const Text('Log Out', style: TextStyle(color: AppColors.red, fontSize: 14, fontWeight: FontWeight.w500)),
+                Icon(Icons.logout_rounded, size: 18, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  'Log Out',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.41,
+                  ),
+                ),
               ],
             ),
           ),
@@ -317,37 +324,35 @@ class _SettingsItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GestureDetector(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: GlassCard(
+        padding: const EdgeInsets.all(14),
+        borderRadius: AppRadius.md,
         onTap: onTap,
-        child: GlassCard(
-          padding: const EdgeInsets.all(14),
-          borderRadius: 14,
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: AppColors.textSecondary, size: 18),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 2),
-                    Text(subtitle, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                  ],
-                ),
+              child: Icon(icon, color: AppColors.textSecondary, size: 18),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: -0.1)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: AppTypography.caption),
+                ],
               ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
-            ],
-          ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
+          ],
         ),
       ),
     );

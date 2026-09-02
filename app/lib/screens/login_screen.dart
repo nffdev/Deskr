@@ -3,6 +3,8 @@ import '../theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/pressable.dart';
+import '../widgets/app_background.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 
@@ -52,30 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            top: -200,
-            left: -150,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -200,
-            right: -150,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purpleLight.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -88,7 +67,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 64,
                       decoration: BoxDecoration(
                         color: AppColors.purpleDim,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       child: const Icon(
                         Icons.desktop_windows_rounded,
@@ -96,21 +76,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         size: 32,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     const Text(
                       'Deskr',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTypography.largeTitle,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     const Text(
                       'Sign in to continue',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 14, letterSpacing: -0.1),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xxxl),
                     GlassCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           "Don't have an account? ",
                           style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                         ),
-                        GestureDetector(
+                        Pressable(
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const RegisterScreen()),

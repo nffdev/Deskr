@@ -5,6 +5,8 @@ import '../theme.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/pressable.dart';
+import '../widgets/app_background.dart';
 
 class DevicesScreen extends StatefulWidget {
   const DevicesScreen({super.key});
@@ -55,18 +57,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            top: -200,
-            left: -100,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,22 +79,22 @@ class _DevicesScreenState extends State<DevicesScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Devices', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                          const Text('Devices', style: AppTypography.title),
                           Text(
                             '${online.length} online',
-                            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                            style: AppTypography.caption,
                           ),
                         ],
                       ),
                       const Spacer(),
-                      GestureDetector(
+                      Pressable(
                         onTap: _fetchDevices,
                         child: Container(
-                          width: 36,
-                          height: 36,
+                          width: 40,
+                          height: 40,
                           decoration: BoxDecoration(
                             color: AppColors.surfaceLight.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                             border: Border.all(color: AppColors.border),
                           ),
                           child: const Icon(Icons.refresh_rounded, color: AppColors.textSecondary, size: 18),
@@ -142,7 +133,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                               backgroundColor: AppColors.surface,
                               onRefresh: _fetchDevices,
                               child: ListView(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                                 children: [
                                   if (online.isNotEmpty) ...[
                                     _SectionHeader(label: 'Online', count: online.length, color: AppColors.green),
@@ -209,7 +200,7 @@ class _DeviceCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: GlassCard(
         padding: const EdgeInsets.all(14),
-        borderRadius: 14,
+        borderRadius: AppRadius.md,
         child: Row(
           children: [
             Container(
@@ -241,12 +232,12 @@ class _DeviceCard extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: isActive
-                    ? AppColors.green.withValues(alpha: 0.1)
-                    : AppColors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
+                    ? AppColors.green.withValues(alpha: 0.12)
+                    : AppColors.red.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

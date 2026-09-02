@@ -3,6 +3,8 @@ import '../theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/pressable.dart';
+import '../widgets/app_background.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -61,18 +63,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            top: -200,
-            right: -150,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -85,7 +76,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       height: 64,
                       decoration: BoxDecoration(
                         color: AppColors.purpleDim,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       child: const Icon(
                         Icons.desktop_windows_rounded,
@@ -93,17 +85,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         size: 32,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     const Text(
                       'Create Account',
-                      style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                      style: AppTypography.largeTitle,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     const Text(
                       'Get started with Deskr',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 14, letterSpacing: -0.1),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xxxl),
                     GlassCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,7 +165,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           'Already have an account? ',
                           style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                         ),
-                        GestureDetector(
+                        Pressable(
                           onTap: () => Navigator.pop(context),
                           child: const Text(
                             'Sign In',

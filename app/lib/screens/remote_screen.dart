@@ -6,7 +6,9 @@ import '../theme.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/pressable.dart';
 import '../widgets/visual_keyboard.dart';
+import '../widgets/app_background.dart';
 
 class RemoteScreen extends StatefulWidget {
   const RemoteScreen({super.key});
@@ -233,18 +235,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            bottom: -200,
-            right: -100,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.purple.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AppBackground()),
           SafeArea(
             child: Column(
               children: [
@@ -316,7 +307,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Remote Control', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                const Text('Remote Control', style: AppTypography.title),
                 Row(
                   children: [
                     Flexible(
@@ -351,13 +342,13 @@ class _RemoteScreenState extends State<RemoteScreen> {
             ),
           ),
           if (_connected)
-            GestureDetector(
+            Pressable(
               onTap: _disconnect,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: AppColors.red.withValues(alpha: 0.2)),
                 ),
                 child: const Text('Disconnect', style: TextStyle(color: AppColors.red, fontSize: 12, fontWeight: FontWeight.w500)),
@@ -403,13 +394,13 @@ class _RemoteScreenState extends State<RemoteScreen> {
                 else
                   ...onlineDevices.map((device) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: GestureDetector(
+                    child: Pressable(
                       onTap: () => _connect(device),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.surfaceLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           border: Border.all(color: AppColors.border),
                         ),
                         child: Row(
@@ -691,14 +682,16 @@ class _ToolbarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: AppMotion.normal,
+        curve: AppMotion.curve,
         padding: const EdgeInsets.all(8),
         margin: const EdgeInsets.only(right: 4),
         decoration: BoxDecoration(
           color: active ? AppColors.purple.withValues(alpha: 0.2) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Icon(icon, size: 18, color: active ? AppColors.purpleLight : AppColors.textSecondary),
       ),
