@@ -213,7 +213,6 @@ const receiveShellOutput = async (req, res) => {
 };
 
 module.exports = {
-    __notifyNewConnection: notifyNewConnection,
     recordConnection,
     getRecentConnections,
     handleHeartbeat,
