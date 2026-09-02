@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/auth_service.dart';
+import '../services/push_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/pressable.dart';
@@ -26,6 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifyBuilds = true;
 
   Future<void> _logout() async {
+    await PushService.unregister();
     await AuthService.clearToken();
     if (mounted) {
       Navigator.pushAndRemoveUntil(

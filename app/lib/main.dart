@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'theme.dart';
 import 'services/auth_service.dart';
+import 'services/push_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'widgets/app_background.dart';
@@ -13,6 +14,7 @@ void main() {
     statusBarIconBrightness: Brightness.light,
     systemNavigationBarColor: AppColors.background,
   ));
+  PushService.init();
   runApp(const DeskrApp());
 }
 
