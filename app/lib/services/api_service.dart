@@ -33,6 +33,43 @@ class ApiService {
     return [];
   }
 
+  static Future<Map<String, dynamic>?> getMe() async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.get(
+        Uri.parse('${AppConfig.apiBase}/users/@me'),
+        headers: headers,
+      );
+      if (res.statusCode == 200) {
+        return Map<String, dynamic>.from(jsonDecode(res.body));
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<bool> updateNotifications({
+    bool? connectionAlerts,
+    bool? buildNotifications,
+  }) async {
+    final body = <String, bool>{};
+    if (connectionAlerts != null) body['connectionAlerts'] = connectionAlerts;
+    if (buildNotifications != null) body['buildNotifications'] = buildNotifications;
+
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.put(
+        Uri.parse('${AppConfig.apiBase}/users/notifications'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+      return res.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
   static Future<void> sendCommand(String deviceId, Map<String, dynamic> command) async {
     final headers = await AuthService.authHeaders();
     await http.post(

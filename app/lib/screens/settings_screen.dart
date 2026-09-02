@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/push_service.dart';
 import '../widgets/glass_card.dart';
@@ -25,6 +26,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _passwordSuccess;
   bool _notifyConnections = true;
   bool _notifyBuilds = true;
+  bool _loadingPrefs = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final me = await ApiService.getMe();
+    if (!mounted) return;
+
+    final notifications = me?['notifications'];
+    setState(() {
+      if (notifications is Map) {
+        _notifyConnections = notifications['connectionAlerts'] != false;
+        _notifyBuilds = notifications['buildNotifications'] != false;
+      }
+      _loadingPrefs = false;
+    });
+  }
+
+  Future<void> _setNotifyConnections(bool value) async {
+    final previous = _notifyConnections;
+    setState(() => _notifyConnections = value);
+
+    final ok = await ApiService.updateNotifications(connectionAlerts: value);
+    if (!ok && mounted) {
+      setState(() => _notifyConnections = previous);
+      _showSaveError();
+    }
+  }
+
+  Future<void> _setNotifyBuilds(bool value) async {
+    final previous = _notifyBuilds;
+    setState(() => _notifyBuilds = value);
+
+    final ok = await ApiService.updateNotifications(buildNotifications: value);
+    if (!ok && mounted) {
+      setState(() => _notifyBuilds = previous);
+      _showSaveError();
+    }
+  }
+
+  void _showSaveError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not save your preference'),
+        backgroundColor: AppColors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   Future<void> _logout() async {
     await PushService.unregister();
@@ -292,24 +346,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GlassCard(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _ToggleItem(
-              label: 'New Connections',
-              subtitle: 'Get notified when a device connects',
-              value: _notifyConnections,
-              onChanged: (v) => setState(() => _notifyConnections = v),
-            ),
-            Divider(color: AppColors.border, height: 24),
-            _ToggleItem(
-              label: 'Build Completion',
-              subtitle: 'Get notified when a build finishes',
-              value: _notifyBuilds,
-              onChanged: (v) => setState(() => _notifyBuilds = v),
-            ),
-          ],
-        ),
+        child: _loadingPrefs
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: CircularProgressIndicator(color: AppColors.purple),
+                ),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ToggleItem(
+                    label: 'New Connections',
+                    subtitle: 'Get notified when a device connects',
+                    value: _notifyConnections,
+                    onChanged: _setNotifyConnections,
+                  ),
+                  Divider(color: AppColors.border, height: 24),
+                  _ToggleItem(
+                    label: 'Build Completion',
+                    subtitle: 'Get notified when a build finishes',
+                    value: _notifyBuilds,
+                    onChanged: _setNotifyBuilds,
+                  ),
+                ],
+              ),
       ),
     );
   }
