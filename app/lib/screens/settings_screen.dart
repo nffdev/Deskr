@@ -238,6 +238,47 @@ class _SecurityScreenState extends State<SecurityScreen> {
     super.dispose();
   }
 
+  Future<void> _changePassword() async {
+    setState(() {
+      _passwordError = null;
+      _passwordSuccess = null;
+    });
+
+    if (_currentPasswordController.text.isEmpty) {
+      setState(() => _passwordError = 'Please enter your current password');
+      return;
+    }
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      setState(() => _passwordError = 'Passwords do not match');
+      return;
+    }
+    if (_newPasswordController.text.length < 6) {
+      setState(() => _passwordError = 'Password must be at least 6 characters');
+      return;
+    }
+
+    setState(() => _savingPassword = true);
+
+    final result = await ApiService.changePassword(
+      currentPassword: _currentPasswordController.text,
+      newPassword: _newPasswordController.text,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _savingPassword = false;
+      if (result['success'] == true) {
+        _passwordSuccess = result['message'];
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
+      } else {
+        _passwordError = result['message'];
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return _SectionPage(
@@ -305,17 +346,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
               GradientButton(
                 label: 'Save Password',
                 loading: _savingPassword,
-                onPressed: () {
-                  if (_newPasswordController.text != _confirmPasswordController.text) {
-                    setState(() => _passwordError = 'Passwords do not match');
-                    return;
-                  }
-                  if (_newPasswordController.text.length < 6) {
-                    setState(() => _passwordError = 'Password must be at least 6 characters');
-                    return;
-                  }
-                  setState(() => _passwordSuccess = 'Password updated successfully');
-                },
+                onPressed: _savingPassword ? null : _changePassword,
               ),
             ],
           ),

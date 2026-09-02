@@ -49,6 +49,31 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.put(
+        Uri.parse('${AppConfig.apiBase}/users/password'),
+        headers: headers,
+        body: jsonEncode({
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        return {'success': true, 'message': data['message'] ?? 'Password changed successfully.'};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Could not change password.'};
+    } catch (e) {
+      return {'success': false, 'message': 'Network error, please try again.'};
+    }
+  }
+
   static Future<bool> updateNotifications({
     bool? connectionAlerts,
     bool? buildNotifications,
