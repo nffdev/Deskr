@@ -4,7 +4,7 @@ import '../theme.dart';
 import '../services/push_service.dart';
 import '../widgets/pressable.dart';
 import 'devices_screen.dart';
-import 'remote_screen.dart';
+import 'remote/remote_screen.dart';
 import 'shell_screen.dart';
 import 'settings_screen.dart';
 
