@@ -147,7 +147,14 @@ class _RemoteScreenState extends State<RemoteScreen> {
       PageRouteBuilder(
         opaque: true,
         pageBuilder: (_, __, ___) => _FullscreenView(
-          parentState: this,
+          currentDeviceId: () => _selectedDevice?['_id'] as String?,
+          activeMonitor: () =>
+              _monitors.isNotEmpty ? _monitors[_activeMonitor] : null,
+          onSendKey: _sendKey,
+          onFrame: (frame) => _screenFrame = frame,
+          initialFrame: _screenFrame,
+          initialMouseControl: _mouseControl,
+          initialKeyboardControl: _keyboardControl,
           onExit: _exitFullscreen,
         ),
       ),
@@ -581,11 +588,23 @@ class _RemoteScreenState extends State<RemoteScreen> {
 }
 
 class _FullscreenView extends StatefulWidget {
-  final _RemoteScreenState parentState;
+  final String? Function() currentDeviceId;
+  final Map<String, dynamic>? Function() activeMonitor;
+  final void Function(String key, String code) onSendKey;
+  final ValueChanged<String> onFrame;
+  final String? initialFrame;
+  final bool initialMouseControl;
+  final bool initialKeyboardControl;
   final VoidCallback onExit;
 
   const _FullscreenView({
-    required this.parentState,
+    required this.currentDeviceId,
+    required this.activeMonitor,
+    required this.onSendKey,
+    required this.onFrame,
+    required this.initialFrame,
+    required this.initialMouseControl,
+    required this.initialKeyboardControl,
     required this.onExit,
   });
 
@@ -603,19 +622,19 @@ class _FullscreenViewState extends State<_FullscreenView> {
   @override
   void initState() {
     super.initState();
-    _mouseControl = widget.parentState._mouseControl;
-    _keyboardControl = widget.parentState._keyboardControl;
-    _screenFrame = widget.parentState._screenFrame;
+    _mouseControl = widget.initialMouseControl;
+    _keyboardControl = widget.initialKeyboardControl;
+    _screenFrame = widget.initialFrame;
 
     SocketService.instance.on('screenFrame', _onFrame);
   }
 
   void _onFrame(dynamic data) {
-    final parent = widget.parentState;
-    if (parent._selectedDevice != null && data['connectionId'] == parent._selectedDevice!['_id']) {
+    final deviceId = widget.currentDeviceId();
+    if (deviceId != null && data['connectionId'] == deviceId) {
       if (mounted) {
         setState(() => _screenFrame = data['frame']);
-        parent._screenFrame = data['frame'];
+        widget.onFrame(data['frame']);
       }
     }
   }
@@ -632,9 +651,7 @@ class _FullscreenViewState extends State<_FullscreenView> {
 
     final local = renderBox.globalToLocal(globalPosition);
     final size = renderBox.size;
-    final parent = widget.parentState;
-
-    final monitor = parent._monitors.isNotEmpty ? parent._monitors[parent._activeMonitor] : null;
+    final monitor = widget.activeMonitor();
     final screenW = (monitor?['width'] ?? 1920).toDouble();
     final screenH = (monitor?['height'] ?? 1080).toDouble();
 
@@ -662,7 +679,8 @@ class _FullscreenViewState extends State<_FullscreenView> {
   }
 
   void _sendMouseEvent(String type, Offset globalPosition, {int button = 0}) {
-    if (!_mouseControl || widget.parentState._selectedDevice == null) return;
+    final deviceId = widget.currentDeviceId();
+    if (!_mouseControl || deviceId == null) return;
 
     if (type == 'mouseMove') {
       final now = DateTime.now();
@@ -673,7 +691,7 @@ class _FullscreenViewState extends State<_FullscreenView> {
     final pos = _getRelativePosition(globalPosition);
     if (pos == null) return;
 
-    ApiService.sendCommand(widget.parentState._selectedDevice!['_id'], {
+    ApiService.sendCommand(deviceId, {
       'type': type,
       'x': pos.dx.round(),
       'y': pos.dy.round(),
@@ -788,7 +806,7 @@ class _FullscreenViewState extends State<_FullscreenView> {
               Container(
                 color: AppColors.background,
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: VisualKeyboard(onKeyTap: widget.parentState._sendKey),
+                child: VisualKeyboard(onKeyTap: widget.onSendKey),
               ),
           ],
         ),
