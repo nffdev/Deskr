@@ -11,6 +11,7 @@ import '../../widgets/visual_keyboard.dart';
 import '../../widgets/device_selector.dart';
 import '../../widgets/toolbar_button.dart';
 import 'fullscreen_view.dart';
+import 'remote_geometry.dart';
 import '../../widgets/app_background.dart';
 
 class RemoteScreen extends StatefulWidget {
@@ -179,35 +180,11 @@ class _RemoteScreenState extends State<RemoteScreen> {
     final renderBox = _screenKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null || _screenFrame == null) return null;
 
-    final local = renderBox.globalToLocal(globalPosition);
-    final size = renderBox.size;
-
-    final monitor = _monitors.isNotEmpty ? _monitors[_activeMonitor] : null;
-    final screenW = (monitor?['width'] ?? 1920).toDouble();
-    final screenH = (monitor?['height'] ?? 1080).toDouble();
-
-    final imgAspect = screenW / screenH;
-    final containerAspect = size.width / size.height;
-
-    double imgX, imgY, imgW, imgH;
-    if (containerAspect > imgAspect) {
-      imgH = size.height;
-      imgW = imgH * imgAspect;
-      imgX = (size.width - imgW) / 2;
-      imgY = 0;
-    } else {
-      imgW = size.width;
-      imgH = imgW / imgAspect;
-      imgX = 0;
-      imgY = (size.height - imgH) / 2;
-    }
-
-    final relX = (local.dx - imgX) / imgW;
-    final relY = (local.dy - imgY) / imgH;
-
-    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return null;
-
-    return Offset(relX * screenW, relY * screenH);
+    return projectToRemoteScreen(
+      containerSize: renderBox.size,
+      localPosition: renderBox.globalToLocal(globalPosition),
+      monitor: _monitors.isNotEmpty ? _monitors[_activeMonitor] : null,
+    );
   }
 
   void _sendMouseEvent(String type, Offset globalPosition, {int button = 0}) {
