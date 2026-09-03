@@ -154,6 +154,12 @@ class _RemoteScreenState extends State<RemoteScreen> {
               _monitors.isNotEmpty ? _monitors[_activeMonitor] : null,
           onSendKey: _sendKey,
           onFrame: (frame) => _screenFrame = frame,
+          onMouseControlChanged: (v) {
+            if (mounted) setState(() => _mouseControl = v);
+          },
+          onKeyboardControlChanged: (v) {
+            if (mounted) setState(() => _keyboardControl = v);
+          },
           initialFrame: _screenFrame,
           initialMouseControl: _mouseControl,
           initialKeyboardControl: _keyboardControl,

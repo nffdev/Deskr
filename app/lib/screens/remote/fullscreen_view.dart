@@ -11,6 +11,8 @@ class FullscreenView extends StatefulWidget {
   final Map<String, dynamic>? Function() activeMonitor;
   final void Function(String key, String code) onSendKey;
   final ValueChanged<String> onFrame;
+  final ValueChanged<bool> onMouseControlChanged;
+  final ValueChanged<bool> onKeyboardControlChanged;
   final String? initialFrame;
   final bool initialMouseControl;
   final bool initialKeyboardControl;
@@ -22,6 +24,8 @@ class FullscreenView extends StatefulWidget {
     required this.activeMonitor,
     required this.onSendKey,
     required this.onFrame,
+    required this.onMouseControlChanged,
+    required this.onKeyboardControlChanged,
     required this.initialFrame,
     required this.initialMouseControl,
     required this.initialKeyboardControl,
@@ -147,7 +151,10 @@ class _FullscreenViewState extends State<FullscreenView> {
                     child: Row(
                       children: [
                         GestureDetector(
-                          onTap: () => setState(() => _mouseControl = !_mouseControl),
+                          onTap: () {
+                            setState(() => _mouseControl = !_mouseControl);
+                            widget.onMouseControlChanged(_mouseControl);
+                          },
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             margin: const EdgeInsets.only(right: 6),
@@ -159,7 +166,10 @@ class _FullscreenViewState extends State<FullscreenView> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => setState(() => _keyboardControl = !_keyboardControl),
+                          onTap: () {
+                            setState(() => _keyboardControl = !_keyboardControl);
+                            widget.onKeyboardControlChanged(_keyboardControl);
+                          },
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             margin: const EdgeInsets.only(right: 6),
